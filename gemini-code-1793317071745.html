@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FinanControl - Controle de Dívidas & Acordos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full font-sans antialiased transition-colors duration-200">
+
+    <!-- SCREEN 1: LOGIN -->
+    <div id="screen-login" class="min-h-screen flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-900">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8 space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-brand-600 text-white p-3 rounded-2xl shadow-lg shadow-brand-500/30 mb-2">
+                    <i data-lucide="wallet" class="w-8 h-8"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">FinanControl</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Controle Pessoal de Dívidas & Acordos</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">E-mail</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                        <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Senha</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                </div>
+
+                <div id="login-error" class="hidden p-3 rounded-xl bg-rose-50 text-rose-600 text-xs font-medium text-center"></div>
+
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-3 rounded-xl shadow-lg shadow-brand-500/20 active:scale-[0.99] transition-all text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    Entrar no Sistema
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: DASHBOARD -->
+    <div id="screen-app" class="hidden min-h-screen flex flex-col md:flex-row pb-20 md:pb-0">
+
+        <!-- Sidebar -->
+        <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-4 sticky top-0 h-screen z-20">
+            <div class="flex items-center gap-3 px-2 py-3 mb-6">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-lg shadow-brand-500/30">
+                    <i data-lucide="wallet" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 dark:text-white leading-tight">FinanControl</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Gestão de Dívidas</p>
+                </div>
+            </div>
+
+            <nav class="space-y-1 flex-1">
+                <button onclick="switchTab('dashboard')" id="dt-nav-dashboard" class="nav-btn-desktop w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-brand-600 bg-brand-50 dark:bg-slate-700/50 dark:text-brand-500">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    Visão Geral
+                </button>
+                <button onclick="switchTab('debts')" id="dt-nav-debts" class="nav-btn-desktop w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
+                    <i data-lucide="receipt" class="w-5 h-5"></i>
+                    Minhas Dívidas
+                </button>
+            </nav>
+
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                <button onclick="toggleTheme()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                    <span class="flex items-center gap-2">
+                        <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                        Tema Claro/Escuro
+                    </span>
+                </button>
+                <button onclick="handleLogout()" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    Sair da Conta
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+
+            <!-- Mobile Top Header -->
+            <header class="flex md:hidden items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-2">
+                    <div class="bg-brand-600 text-white p-1.5 rounded-lg">
+                        <i data-lucide="wallet" class="w-5 h-5"></i>
+                    </div>
+                    <span class="font-bold text-slate-900 dark:text-white">FinanControl</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                        <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                    </button>
+                    <button onclick="handleLogout()" class="p-2 rounded-lg bg-rose-100 text-rose-600">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- TAB 1: VISÃO GERAL -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Resumo Financeiro</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Visão consolidada de todas as dívidas e pagamentos efetuados.</p>
+                    </div>
+                    <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        Nova Dívida / Acordo
+                    </button>
+                </div>
+
+                <!-- Cards Totais -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total das Dívidas</span>
+                            <div class="p-2 bg-blue-50 dark:bg-slate-700 text-blue-600 rounded-lg">
+                                <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <p id="stat-total-debt" class="text-2xl font-bold text-slate-900 dark:text-white">R$ 0,00</p>
+                        <span class="text-xs text-slate-400">Valor global contratado</span>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Já Pago</span>
+                            <div class="p-2 bg-emerald-50 dark:bg-slate-700 text-emerald-600 rounded-lg">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <p id="stat-total-paid" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</p>
+                        <span class="text-xs text-slate-400">Parcelas quitadas até hoje</span>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Saldo Devedor Restante</span>
+                            <div class="p-2 bg-rose-50 dark:bg-slate-700 text-rose-600 rounded-lg">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <p id="stat-total-remaining" class="text-2xl font-bold text-rose-600 dark:text-rose-400">R$ 0,00</p>
+                        <span class="text-xs text-slate-400">Valor pendente a quitar</span>
+                    </div>
+                </div>
+
+                <!-- Lista de Cartões por Dívida -->
+                <div class="space-y-4">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                        <i data-lucide="list-checks" class="w-5 h-5 text-brand-600"></i>
+                        Minhas Contas e Acordos Ativos
+                    </h3>
+                    <div id="debts-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Gerado via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: MINHAS DÍVIDAS E DETALHES -->
+            <section id="tab-debts" class="tab-content hidden space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gerenciamento de Dívidas</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Selecione uma conta para ver e alterar o status de cada parcela.</p>
+                </div>
+
+                <div id="debt-detail-container" class="space-y-6">
+                    <!-- Tabela e detalhes da conta selecionada -->
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Bottom Nav Mobile -->
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-2 flex justify-around items-center z-30 shadow-lg">
+            <button onclick="switchTab('dashboard')" class="flex flex-col items-center gap-1 text-brand-600 font-medium text-xs">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                Visão Geral
+            </button>
+            <button onclick="switchTab('debts')" class="flex flex-col items-center gap-1 text-slate-500 font-medium text-xs">
+                <i data-lucide="receipt" class="w-5 h-5"></i>
+                Dívidas
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- MODAL: CADASTRAR NOVA DÍVIDA COM DIVISÃO AUTOMÁTICA -->
+    <div id="modal-new-debt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-700">
+                <h3 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-brand-600"></i>
+                    Cadastrar Nova Dívida / Acordo
+                </h3>
+                <button onclick="toggleNewDebtModal(false)" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form onsubmit="handleCreateDebt(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Nome do Credor / Conta *</label>
+                    <input type="text" id="debt-name" required placeholder="Ex: Acordo Banco X, Cartão Y, Financiamento..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Valor Total (R$) *</label>
+                        <input type="number" step="0.01" id="debt-total-val" oninput="autoCalculateInstallments()" required placeholder="1200.00" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Nº de Parcelas *</label>
+                        <input type="number" id="debt-installments-count" oninput="autoCalculateInstallments()" required min="1" max="120" value="12" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Valor por Parcela (R$) *</label>
+                        <input type="number" step="0.01" id="debt-installment-val" required placeholder="100.00" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">1º Vencimento *</label>
+                        <input type="date" id="debt-start-date" required class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-xs text-slate-500 space-y-1">
+                    <p class="font-semibold text-slate-700 dark:text-slate-300">💡 Regra Inteligente de Vencimento:</p>
+                    <p>Se alguma parcela cair em um final de semana (sábado ou domingo), o vencimento será prorrogado automaticamente para o próximo dia útil (segunda-feira).</p>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="toggleNewDebtModal(false)" class="px-4 py-2 rounded-xl border text-slate-600 dark:text-slate-300 text-sm">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">Salvar Dívida</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { 
+            getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { 
+            getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc 
+        } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyATBOwZd9H-Tc7cYG8CQJ0_QKhpCKfMNyw",
+            authDomain: "app-agendamento-de-consu-73c7d.firebaseapp.com",
+            projectId: "app-agendamento-de-consu-73c7d",
+            storageBucket: "app-agendamento-de-consu-73c7d.firebasestorage.app",
+            messagingSenderId: "624290993545",
+            appId: "1:624290993545:web:2a1bd2ad11fdcdaf477d58",
+            measurementId: "G-Q9HM1H6094"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let debtsList = [];
+        let selectedDebtId = null;
+
+        // Auth state
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('screen-login').classList.add('hidden');
+                document.getElementById('screen-app').classList.remove('hidden');
+                initFirestoreListeners();
+            } else {
+                document.getElementById('screen-app').classList.add('hidden');
+                document.getElementById('screen-login').classList.remove('hidden');
+            }
+        });
+
+        window.handleLogin = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const errDiv = document.getElementById('login-error');
+            errDiv.classList.add('hidden');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (err) {
+                errDiv.innerText = "Usuário ou senha incorretos.";
+                errDiv.classList.remove('hidden');
+            }
+        };
+
+        window.handleLogout = function() {
+            signOut(auth);
+        };
+
+        // Realtime Listener
+        function initFirestoreListeners() {
+            onSnapshot(collection(db, "debts_tracker"), (snapshot) => {
+                debtsList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                
+                if (debtsList.length === 0) {
+                    seedDefaultPlanData();
+                } else {
+                    renderDashboard();
+                    if (selectedDebtId) {
+                        renderDebtDetails(selectedDebtId);
+                    }
+                }
+            });
+        }
+
+        // Função de cálculo de dia útil (Se sábado/domingo -> joga pra segunda)
+        function getNextBusinessDay(dateStr) {
+            const parts = dateStr.split('-');
+            let dt = new Date(parts[0], parts[1] - 1, parts[2]);
+            const dayOfWeek = dt.getDay(); // 0 = Dom, 6 = Sáb
+            
+            if (dayOfWeek === 6) { // Sábado -> Soma 2 dias
+                dt.setDate(dt.getDate() + 2);
+            } else if (dayOfWeek === 0) { // Domingo -> Soma 1 dia
+                dt.setDate(dt.getDate() + 1);
+            }
+
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const d = String(dt.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // Cálculo Automático no Formulário
+        window.autoCalculateInstallments = function() {
+            const total = parseFloat(document.getElementById('debt-total-val').value) || 0;
+            const count = parseInt(document.getElementById('debt-installments-count').value) || 1;
+            if (total > 0 && count > 0) {
+                const perInstallment = (total / count).toFixed(2);
+                document.getElementById('debt-installment-val').value = perInstallment;
+            }
+        };
+
+        // Salvar Nova Dívida com Divisão e Ajuste de Dias Úteis
+        window.handleCreateDebt = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('debt-name').value;
+            const totalVal = parseFloat(document.getElementById('debt-total-val').value);
+            const count = parseInt(document.getElementById('debt-installments-count').value);
+            const perVal = parseFloat(document.getElementById('debt-installment-val').value);
+            const startDateStr = document.getElementById('debt-start-date').value;
+
+            const startParts = startDateStr.split('-');
+            const origDay = parseInt(startParts[2]);
+            const origMonth = parseInt(startParts[1]) - 1;
+            const origYear = parseInt(startParts[0]);
+
+            let installments = [];
+
+            for (let i = 0; i < count; i++) {
+                let targetDate = new Date(origYear, origMonth + i, origDay);
+                let y = targetDate.getFullYear();
+                let m = String(targetDate.getMonth() + 1).padStart(2, '0');
+                let d = String(targetDate.getDate()).padStart(2, '0');
+                let rawDateStr = `${y}-${m}-${d}`;
+
+                // Regra de Vencimento em Dia Útil
+                let adjustedDateStr = getNextBusinessDay(rawDateStr);
+
+                installments.push({
+                    number: i + 1,
+                    dueDate: adjustedDateStr,
+                    amount: perVal,
+                    status: 'Pendente'
+                });
+            }
+
+            const newDebtObj = {
+                name: name,
+                totalAmount: totalVal,
+                installmentsCount: count,
+                installments: installments,
+                createdAt: new Date().toISOString()
+            };
+
+            await addDoc(collection(db, "debts_tracker"), newDebtObj);
+            toggleNewDebtModal(false);
+            document.getElementById('debt-name').value = '';
+            document.getElementById('debt-total-val').value = '';
+        };
+
+        // Renderização do Dashboard
+        function renderDashboard() {
+            let grandTotal = 0;
+            let grandPaid = 0;
+
+            const grid = document.getElementById('debts-cards-grid');
+            if (!grid) return;
+
+            grid.innerHTML = debtsList.map(debt => {
+                const total = debt.installments.reduce((acc, item) => acc + item.amount, 0);
+                const paid = debt.installments.filter(item => item.status === 'Pago').reduce((acc, item) => acc + item.amount, 0);
+                const remaining = total - paid;
+                const paidCount = debt.installments.filter(item => item.status === 'Pago').length;
+                const progressPct = Math.round((paidCount / debt.installments.length) * 100) || 0;
+
+                grandTotal += total;
+                grandPaid += paid;
+
+                return `
+                    <div onclick="selectAndShowDebt('${debt.id}')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-brand-500 cursor-pointer transition-all space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900 dark:text-white text-base">${debt.name}</h4>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${remaining === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                                ${remaining === 0 ? 'Quitado' : `${paidCount}/${debt.installments.length} Pagas`}
+                            </span>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-500 mb-1">
+                                <span>Progresso</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">${progressPct}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                                <div class="bg-brand-600 h-full rounded-full transition-all duration-300" style="width: ${progressPct}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <div>
+                                <span class="text-slate-400 block">Pago</span>
+                                <strong class="text-emerald-600 font-bold">R$ ${paid.toFixed(2)}</strong>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-400 block">Restante</span>
+                                <strong class="text-rose-600 font-bold">R$ ${remaining.toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('stat-total-debt').innerText = `R$ ${grandTotal.toFixed(2)}`;
+            document.getElementById('stat-total-paid').innerText = `R$ ${grandPaid.toFixed(2)}`;
+            document.getElementById('stat-total-remaining').innerText = `R$ ${(grandTotal - grandPaid).toFixed(2)}`;
+
+            lucide.createIcons();
+        }
+
+        // Mostrar Detalhes da Dívida e Tabela de Parcelas
+        window.selectAndShowDebt = function(id) {
+            selectedDebtId = id;
+            switchTab('debts');
+            renderDebtDetails(id);
+        };
+
+        function renderDebtDetails(id) {
+            const container = document.getElementById('debt-detail-container');
+            const debt = debtsList.find(d => d.id === id);
+
+            if (!debt) {
+                container.innerHTML = `<p class="text-slate-400 text-sm">Selecione uma conta na Visão Geral.</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <button onclick="switchTab('dashboard')" class="text-xs text-brand-600 font-medium hover:underline mb-1 inline-flex items-center gap-1">
+                                ← Voltar para Visão Geral
+                            </button>
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">${debt.name}</h3>
+                        </div>
+                        <button onclick="deleteDebt('${debt.id}')" class="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Esta Dívida
+                        </button>
+                    </div>
+
+                    <!-- Tabela de Parcelas -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-400">
+                                    <th class="py-3 px-2">Parcela</th>
+                                    <th class="py-3 px-2">Vencimento (Ajustado)</th>
+                                    <th class="py-3 px-2">Valor</th>
+                                    <th class="py-3 px-2">Status</th>
+                                    <th class="py-3 px-2 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
+                                ${debt.installments.map((inst, index) => `
+                                    <tr>
+                                        <td class="py-3 px-2 font-bold">${inst.number}ª Parcela</td>
+                                        <td class="py-3 px-2">${inst.dueDate.split('-').reverse().join('/')}</td>
+                                        <td class="py-3 px-2 font-semibold">R$ ${inst.amount.toFixed(2)}</td>
+                                        <td class="py-3 px-2">
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${inst.status === 'Pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                                ${inst.status}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 text-right">
+                                            <button onclick="toggleInstallmentStatus('${debt.id}', ${index})" class="px-3 py-1.5 rounded-lg text-xs font-medium ${inst.status === 'Pago' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
+                                                ${inst.status === 'Pago' ? 'Marcar Pendente' : 'Marcar como Pago'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            lucide.createIcons();
+        }
+
+        // Alternar Status da Parcela
+        window.toggleInstallmentStatus = async function(debtId, instIndex) {
+            const debt = debtsList.find(d => d.id === debtId);
+            if (!debt) return;
+
+            const updatedInstallments = [...debt.installments];
+            updatedInstallments[instIndex].status = updatedInstallments[instIndex].status === 'Pago' ? 'Pendente' : 'Pago';
+
+            await updateDoc(doc(db, "debts_tracker", debtId), {
+                installments: updatedInstallments
+            });
+        };
+
+        window.deleteDebt = async function(id) {
+            if (confirm("Deseja realmente apagar esta dívida e todo o histórico?")) {
+                await deleteDoc(doc(db, "debts_tracker", id));
+                switchTab('dashboard');
+            }
+        };
+
+        // Carga inicial com dados da sua planilha
+        async function seedDefaultPlanData() {
+            const initialData = [
+                {
+                    name: "Acordo Pai Porto Seguro",
+                    totalAmount: 2106.48,
+                    installmentsCount: 24,
+                    installments: Array.from({length: 24}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : i < 23 ? `2026-${String(i-10).padStart(2,'0')}-07` : '2027-01-07',
+                        amount: 87.77,
+                        status: i < 21 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Acordo Matheus Nubank",
+                    totalAmount: 3091.43,
+                    installmentsCount: 23,
+                    installments: Array.from({length: 23}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-19` : `2026-${String(i-10).padStart(2,'0')}-19`,
+                        amount: 134.41,
+                        status: 'Pago'
+                    }))
+                },
+                {
+                    name: "Carro Corsa Max",
+                    totalAmount: 21360.00,
+                    installmentsCount: 10,
+                    installments: Array.from({length: 10}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+3).padStart(2,'0')}-10`,
+                        amount: 2136.00,
+                        status: i < 8 ? 'Pago' : 'Pendente'
+                    }))
+                }
+            ];
+
+            for (const d of initialData) {
+                await addDoc(collection(db, "debts_tracker"), d);
+            }
+        }
+
+        window.toggleNewDebtModal = function(show) {
+            document.getElementById('modal-new-debt').classList.toggle('hidden', !show);
+        };
+
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        };
+
+        window.toggleTheme = function() {
+            document.documentElement.classList.toggle('dark');
+        };
+
+        window.onload = () => {
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
