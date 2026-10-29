@@ -300,7 +300,6 @@
         let debtsList = [];
         let selectedDebtId = null;
 
-        // Gerenciamento do estado de login
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('screen-login').classList.add('hidden');
@@ -337,7 +336,6 @@
             signOut(auth);
         };
 
-        // Escuta as alterações no Cloud Firestore em tempo real
         function initFirestoreListeners() {
             onSnapshot(collection(db, "debts_tracker"), (snapshot) => {
                 debtsList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -353,11 +351,10 @@
             });
         }
 
-        // Função de cálculo para dias úteis (Se cair no Sábado ou Domingo -> joga pra Segunda-feira)
         function getNextBusinessDay(dateStr) {
             const parts = dateStr.split('-');
             let dt = new Date(parts[0], parts[1] - 1, parts[2]);
-            const dayOfWeek = dt.getDay(); // 0 = Domingo, 6 = Sábado
+            const dayOfWeek = dt.getDay(); // 0 = Dom, 6 = Sáb
             
             if (dayOfWeek === 6) { // Sábado -> Soma 2 dias
                 dt.setDate(dt.getDate() + 2);
@@ -368,9 +365,40 @@
             const y = dt.getFullYear();
             const m = String(dt.getMonth() + 1).padStart(2, '0');
             const d = String(dt.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`; }  // Preenchimento Automático do Valor da Parcela ao digitar Total e Nº de Parcelas window.autoCalculateInstallments = function() { const total = parseFloat(document.getElementById('debt-total-val').value) \vert{}\vert{} 0; const count = parseInt(document.getElementById('debt-installments-count').value) \vert{}\vert{} 1; if (total > 0 && count > 0) { const perInstallment = (total / count).toFixed(2); document.getElementById('debt-installment-val').value = perInstallment; } };  // Salvar Dívida gerando datas em dias úteis window.handleCreateDebt = async function(e) { e.preventDefault(); const name = document.getElementById('debt-name').value; const totalVal = parseFloat(document.getElementById('debt-total-val').value); const count = parseInt(document.getElementById('debt-installments-count').value); const perVal = parseFloat(document.getElementById('debt-installment-val').value); const startDateStr = document.getElementById('debt-start-date').value;  const startParts = startDateStr.split('-'); const origDay = parseInt(startParts[2]); const origMonth = parseInt(startParts[1]) - 1; const origYear = parseInt(startParts[0]);  let installments = [];  for (let i = 0; i < count; i++) { let targetDate = new Date(origYear, origMonth + i, origDay); let y = targetDate.getFullYear(); let m = String(targetDate.getMonth() + 1).padStart(2, '0'); let d = String(targetDate.getDate()).padStart(2, '0'); let rawDateStr = `${y}-${m}-${d}`;
+            return `${y}-${m}-${d}`;
+        }
 
-                // Regra de ajuste automático para dia útil
+        window.autoCalculateInstallments = function() {
+            const total = parseFloat(document.getElementById('debt-total-val').value) || 0;
+            const count = parseInt(document.getElementById('debt-installments-count').value) || 1;
+            if (total > 0 && count > 0) {
+                const perInstallment = (total / count).toFixed(2);
+                document.getElementById('debt-installment-val').value = perInstallment;
+            }
+        };
+
+        window.handleCreateDebt = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('debt-name').value;
+            const totalVal = parseFloat(document.getElementById('debt-total-val').value);
+            const count = parseInt(document.getElementById('debt-installments-count').value);
+            const perVal = parseFloat(document.getElementById('debt-installment-val').value);
+            const startDateStr = document.getElementById('debt-start-date').value;
+
+            const startParts = startDateStr.split('-');
+            const origDay = parseInt(startParts[2]);
+            const origMonth = parseInt(startParts[1]) - 1;
+            const origYear = parseInt(startParts[0]);
+
+            let installments = [];
+
+            for (let i = 0; i < count; i++) {
+                let targetDate = new Date(origYear, origMonth + i, origDay);
+                let y = targetDate.getFullYear();
+                let m = String(targetDate.getMonth() + 1).padStart(2, '0');
+                let d = String(targetDate.getDate()).padStart(2, '0');
+                let rawDateStr = `${y}-${m}-${d}`;
+
                 let adjustedDateStr = getNextBusinessDay(rawDateStr);
 
                 installments.push({
@@ -395,7 +423,6 @@
             document.getElementById('debt-total-val').value = '';
         };
 
-        // Renderiza o Dashboard com métricas globais
         function renderDashboard() {
             let grandTotal = 0;
             let grandPaid = 0;
@@ -475,4 +502,228 @@
                             <button onclick="switchTab('dashboard')" class="text-xs text-brand-600 font-medium hover:underline mb-1 inline-flex items-center gap-1">
                                 ← Voltar para Visão Geral
                             </button>
-                            <h3 class="text-2xl font-bold
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">${debt.name}</h3>
+                        </div>
+                        <button onclick="deleteDebt('${debt.id}')" class="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Esta Dívida
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-400">
+                                    <th class="py-3 px-2">Parcela</th>
+                                    <th class="py-3 px-2">Vencimento (Ajustado)</th>
+                                    <th class="py-3 px-2">Valor</th>
+                                    <th class="py-3 px-2">Status</th>
+                                    <th class="py-3 px-2 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
+                                ${debt.installments.map((inst, index) => `
+                                    <tr>
+                                        <td class="py-3 px-2 font-bold">${inst.number}ª Parcela</td>
+                                        <td class="py-3 px-2">${inst.dueDate.split('-').reverse().join('/')}</td>
+                                        <td class="py-3 px-2 font-semibold">R$ ${inst.amount.toFixed(2)}</td>
+                                        <td class="py-3 px-2">
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${inst.status === 'Pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                                ${inst.status}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 text-right">
+                                            <button onclick="toggleInstallmentStatus('${debt.id}', ${index})" class="px-3 py-1.5 rounded-lg text-xs font-medium ${inst.status === 'Pago' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
+                                                ${inst.status === 'Pago' ? 'Marcar Pendente' : 'Marcar como Pago'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            lucide.createIcons();
+        }
+
+        window.toggleInstallmentStatus = async function(debtId, instIndex) {
+            const debt = debtsList.find(d => d.id === debtId);
+            if (!debt) return;
+
+            const updatedInstallments = [...debt.installments];
+            updatedInstallments[instIndex].status = updatedInstallments[instIndex].status === 'Pago' ? 'Pendente' : 'Pago';
+
+            await updateDoc(doc(db, "debts_tracker", debtId), {
+                installments: updatedInstallments
+            });
+        };
+
+        window.deleteDebt = async function(id) {
+            if (confirm("Deseja realmente apagar esta dívida e todo o histórico?")) {
+                await deleteDoc(doc(db, "debts_tracker", id));
+                switchTab('dashboard');
+            }
+        };
+
+        // Carga inicial completa com todas as 12 despesas/acordos da sua planilha
+        async function seedDefaultPlanData() {
+            const initialData = [
+                {
+                    name: "Acordo Pai Porto Seguro",
+                    totalAmount: 2106.48,
+                    installmentsCount: 24,
+                    installments: Array.from({length: 24}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : i < 23 ? `2026-${String(i-10).padStart(2,'0')}-07` : '2027-01-07',
+                        amount: 87.77,
+                        status: i < 21 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Acordo Matheus Nubank",
+                    totalAmount: 3091.43,
+                    installmentsCount: 23,
+                    installments: Array.from({length: 23}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-19` : `2026-${String(i-10).padStart(2,'0')}-19`,
+                        amount: 134.41,
+                        status: 'Pago'
+                    }))
+                },
+                {
+                    name: "Acordo Matheus Carrefour",
+                    totalAmount: 1951.64,
+                    installmentsCount: 19,
+                    installments: Array.from({length: 19}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : `2026-${String(i-10).padStart(2,'0')}-07`,
+                        amount: 102.56,
+                        status: 'Pago'
+                    }))
+                },
+                {
+                    name: "Acordo Matheus Banco Brasil",
+                    totalAmount: 1300.01,
+                    installmentsCount: 10,
+                    installments: Array.from({length: 10}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+3).padStart(2,'0')}-02`,
+                        amount: i === 0 ? 140.00 : 128.89,
+                        status: i < 8 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Seguro Brascar",
+                    totalAmount: 1870.00,
+                    installmentsCount: 12,
+                    installments: Array.from({length: 12}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
+                        amount: i < 2 ? 175.00 : 154.00,
+                        status: i < 10 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Faculdade",
+                    totalAmount: 1928.22,
+                    installmentsCount: 12,
+                    installments: Array.from({length: 12}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
+                        amount: i < 7 ? 150.00 : 171.37,
+                        status: i < 10 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Conta Celular Vivo",
+                    totalAmount: 1200.00,
+                    installmentsCount: 12,
+                    installments: Array.from({length: 12}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+1).padStart(2,'0')}-21`,
+                        amount: 100.00,
+                        status: i < 9 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Conta Internet OI",
+                    totalAmount: 1380.00,
+                    installmentsCount: 12,
+                    installments: Array.from({length: 12}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
+                        amount: 115.00,
+                        status: i < 9 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Cartao BRB CONECT",
+                    totalAmount: 973.16,
+                    installmentsCount: 12,
+                    installments: Array.from({length: 12}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+1).padStart(2,'0')}-08`,
+                        amount: i === 0 ? 973.16 : 0.00,
+                        status: i < 10 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Cartao BRB GOLD",
+                    totalAmount: 706.40,
+                    installmentsCount: 12,
+                    installments: Array.from({length: 12}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
+                        amount: i === 0 ? 706.40 : 0.00,
+                        status: i < 10 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Carro Corsa Max",
+                    totalAmount: 21360.00,
+                    installmentsCount: 10,
+                    installments: Array.from({length: 10}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+3).padStart(2,'0')}-10`,
+                        amount: 2136.00,
+                        status: i < 8 ? 'Pago' : 'Pendente'
+                    }))
+                },
+                {
+                    name: "Conta IPTV",
+                    totalAmount: 420.00,
+                    installmentsCount: 12,
+                    installments: Array.from({length: 12}, (_, i) => ({
+                        number: i + 1,
+                        dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
+                        amount: 35.00,
+                        status: i < 10 ? 'Pago' : 'Pendente'
+                    }))
+                }
+            ];
+
+            for (const d of initialData) {
+                await addDoc(collection(db, "debts_tracker"), d);
+            }
+        }
+
+        window.toggleNewDebtModal = function(show) {
+            document.getElementById('modal-new-debt').classList.toggle('hidden', !show);
+        };
+
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        };
+
+        window.toggleTheme = function() {
+            document.documentElement.classList.toggle('dark');
+        };
+
+        window.onload = () => {
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
