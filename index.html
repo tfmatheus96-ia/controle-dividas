@@ -136,18 +136,12 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Resumo Financeiro</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Visão consolidada de todas as dívidas e pagamentos efetuados.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Visão consolidada de todas as dívidas, próximos vencimentos e pagamentos.</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="forceSeedAllPlanData()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2.5 rounded-xl font-medium text-xs flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                            Carregar Todas da Planilha
-                        </button>
-                        <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            Nova Dívida / Acordo
-                        </button>
-                    </div>
+                    <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        Nova Dívida / Acordo
+                    </button>
                 </div>
 
                 <!-- Cards Totais -->
@@ -160,7 +154,7 @@
                             </div>
                         </div>
                         <p id="stat-total-debt" class="text-2xl font-bold text-slate-900 dark:text-white">R$ 0,00</p>
-                        <span class="text-xs text-slate-400">Valor global contratado</span>
+                        <span class="text-xs text-slate-400">Valor global das 12 contas</span>
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -186,14 +180,14 @@
                     </div>
                 </div>
 
-                <!-- Lista de Cartões por Dívida -->
+                <!-- Lista de Cartões por Dívida com Próximo Vencimento -->
                 <div class="space-y-4">
                     <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
                         <i data-lucide="list-checks" class="w-5 h-5 text-brand-600"></i>
-                        Minhas Contas e Acordos Ativos
+                        Minhas Contas e Acordos Ativos (12 Contas)
                     </h3>
                     <div id="debts-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <!-- Gerado via JS -->
+                        <!-- Gerado via JS instantaneamente -->
                     </div>
                 </div>
             </section>
@@ -302,13 +296,162 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let debtsList = [];
+        // BASE DE DADOS COMPLETA DA SUA PLANILHA (12 CONTAS REAIS)
+        const initialPlanData = [
+            {
+                id: "plan-1",
+                name: "Acordo Pai Porto Seguro",
+                totalAmount: 2106.48,
+                installmentsCount: 24,
+                installments: Array.from({length: 24}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : i < 23 ? `2026-${String(i-10).padStart(2,'0')}-07` : '2027-01-07',
+                    amount: 87.77,
+                    status: i < 21 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-2",
+                name: "Acordo Matheus Nubank",
+                totalAmount: 3091.43,
+                installmentsCount: 23,
+                installments: Array.from({length: 23}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-19` : `2026-${String(i-10).padStart(2,'0')}-19`,
+                    amount: 134.41,
+                    status: 'Pago'
+                }))
+            },
+            {
+                id: "plan-3",
+                name: "Acordo Matheus Carrefour",
+                totalAmount: 1951.64,
+                installmentsCount: 19,
+                installments: Array.from({length: 19}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : `2026-${String(i-10).padStart(2,'0')}-07`,
+                    amount: 102.56,
+                    status: 'Pago'
+                }))
+            },
+            {
+                id: "plan-4",
+                name: "Acordo Matheus Banco Brasil",
+                totalAmount: 1300.01,
+                installmentsCount: 10,
+                installments: Array.from({length: 10}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+3).padStart(2,'0')}-02`,
+                    amount: i === 0 ? 140.00 : 128.89,
+                    status: i < 8 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-5",
+                name: "Seguro Brascar",
+                totalAmount: 1870.00,
+                installmentsCount: 12,
+                installments: Array.from({length: 12}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
+                    amount: i < 2 ? 175.00 : 154.00,
+                    status: i < 10 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-6",
+                name: "Faculdade",
+                totalAmount: 1928.22,
+                installmentsCount: 12,
+                installments: Array.from({length: 12}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
+                    amount: i < 7 ? 150.00 : 171.37,
+                    status: i < 10 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-7",
+                name: "Conta Celular Vivo",
+                totalAmount: 1200.00,
+                installmentsCount: 12,
+                installments: Array.from({length: 12}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+1).padStart(2,'0')}-21`,
+                    amount: 100.00,
+                    status: i < 9 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-8",
+                name: "Conta Internet OI",
+                totalAmount: 1380.00,
+                installmentsCount: 12,
+                installments: Array.from({length: 12}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
+                    amount: 115.00,
+                    status: i < 9 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-9",
+                name: "Cartao BRB CONECT",
+                totalAmount: 973.16,
+                installmentsCount: 12,
+                installments: Array.from({length: 12}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+1).padStart(2,'0')}-08`,
+                    amount: i === 0 ? 973.16 : 0.00,
+                    status: i < 10 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-10",
+                name: "Cartao BRB GOLD",
+                totalAmount: 706.40,
+                installmentsCount: 12,
+                installments: Array.from({length: 12}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
+                    amount: i === 0 ? 706.40 : 0.00,
+                    status: i < 10 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-11",
+                name: "Carro Corsa Max",
+                totalAmount: 21360.00,
+                installmentsCount: 10,
+                installments: Array.from({length: 10}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+3).padStart(2,'0')}-10`,
+                    amount: 2136.00,
+                    status: i < 8 ? 'Pago' : 'Pendente'
+                }))
+            },
+            {
+                id: "plan-12",
+                name: "Conta IPTV",
+                totalAmount: 420.00,
+                installmentsCount: 12,
+                installments: Array.from({length: 12}, (_, i) => ({
+                    number: i + 1,
+                    dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
+                    amount: 35.00,
+                    status: i < 10 ? 'Pago' : 'Pendente'
+                }))
+            }
+        ];
+
+        let debtsList = [...initialPlanData];
         let selectedDebtId = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('screen-login').classList.add('hidden');
                 document.getElementById('screen-app').classList.remove('hidden');
+                renderDashboard();
                 initFirestoreListeners();
             } else {
                 document.getElementById('screen-app').classList.add('hidden');
@@ -343,16 +486,21 @@
 
         function initFirestoreListeners() {
             onSnapshot(collection(db, "debts_tracker"), (snapshot) => {
-                debtsList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                const cloudDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 
-                // Se só tiver a 1ª dívida ou nenhuma, popula todas as 12 dívidas da planilha
-                if (debtsList.length <= 1) {
-                    forceSeedAllPlanData();
-                } else {
-                    renderDashboard();
-                    if (selectedDebtId) {
-                        renderDebtDetails(selectedDebtId);
-                    }
+                if (cloudDocs.length > 0) {
+                    cloudDocs.forEach(cDoc => {
+                        const index = debtsList.findIndex(d => d.name === cDoc.name || d.id === cDoc.id);
+                        if (index !== -1) {
+                            debtsList[index] = cDoc;
+                        } else {
+                            debtsList.push(cDoc);
+                        }
+                    });
+                }
+                renderDashboard();
+                if (selectedDebtId) {
+                    renderDebtDetails(selectedDebtId);
                 }
             });
         }
@@ -443,6 +591,9 @@
                 const paidCount = debt.installments.filter(item => item.status === 'Pago').length;
                 const progressPct = Math.round((paidCount / debt.installments.length) * 100) || 0;
 
+                // Localiza a próxima parcela pendente para mostrar a data de vencimento
+                const nextPending = debt.installments.find(item => item.status === 'Pendente');
+
                 grandTotal += total;
                 grandPaid += paid;
 
@@ -453,6 +604,22 @@
                             <span class="text-xs font-bold px-2.5 py-1 rounded-full ${remaining === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
                                 ${remaining === 0 ? 'Quitado' : `${paidCount}/${debt.installments.length} Pagas`}
                             </span>
+                        </div>
+
+                        <!-- Data e Valor da Próxima Parcela em Destaque -->
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs">
+                            <div>
+                                <span class="text-slate-400 block text-[11px]">Próximo Vencimento</span>
+                                <strong class="text-slate-800 dark:text-slate-200 font-bold">
+                                    ${nextPending ? nextPending.dueDate.split('-').reverse().join('/') : 'Nenhum pendente'}
+                                </strong>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-400 block text-[11px]">Valor Parcela</span>
+                                <strong class="text-brand-600 dark:text-brand-400 font-bold">
+                                    ${nextPending ? `R$ ${nextPending.amount.toFixed(2)}` : 'R$ 0,00'}
+                                </strong>
+                            </div>
                         </div>
 
                         <div>
@@ -538,7 +705,7 @@
                                             </span>
                                         </td>
                                         <td class="py-3 px-2 text-right">
-                                            <button onclick="toggleInstallmentStatus('${debt.id}', ${index})" class="px-3 py-1.5 rounded-lg text-xs font-medium ${inst.status === 'Pago' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
+                                            <button onclick="toggleInstallmentStatus('${debt.id}', '${inst.number}')" class="px-3 py-1.5 rounded-lg text-xs font-medium ${inst.status === 'Pago' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
                                                 ${inst.status === 'Pago' ? 'Marcar Pendente' : 'Marcar como Pago'}
                                             </button>
                                         </td>
@@ -553,166 +720,33 @@
             lucide.createIcons();
         }
 
-        window.toggleInstallmentStatus = async function(debtId, instIndex) {
+        window.toggleInstallmentStatus = async function(debtId, instNumber) {
             const debt = debtsList.find(d => d.id === debtId);
             if (!debt) return;
 
-            const updatedInstallments = [...debt.installments];
-            updatedInstallments[instIndex].status = updatedInstallments[instIndex].status === 'Pago' ? 'Pendente' : 'Pago';
+            const instIndex = debt.installments.findIndex(i => String(i.number) === String(instNumber));
+            if (instIndex === -1) return;
 
-            await updateDoc(doc(db, "debts_tracker", debtId), {
-                installments: updatedInstallments
-            });
+            debt.installments[instIndex].status = debt.installments[instIndex].status === 'Pago' ? 'Pendente' : 'Pago';
+
+            renderDashboard();
+            renderDebtDetails(debtId);
+
+            if (!debt.id.startsWith('plan-')) {
+                await updateDoc(doc(db, "debts_tracker", debtId), {
+                    installments: debt.installments
+                });
+            }
         };
 
         window.deleteDebt = async function(id) {
             if (confirm("Deseja realmente apagar esta dívida e todo o histórico?")) {
-                await deleteDoc(doc(db, "debts_tracker", id));
+                debtsList = debtsList.filter(d => d.id !== id);
+                renderDashboard();
                 switchTab('dashboard');
-            }
-        };
 
-        // Força a inserção de TODAS as 12 dívidas da sua planilha
-        window.forceSeedAllPlanData = async function() {
-            const existingNames = debtsList.map(d => d.name);
-            const initialData = [
-                {
-                    name: "Acordo Pai Porto Seguro",
-                    totalAmount: 2106.48,
-                    installmentsCount: 24,
-                    installments: Array.from({length: 24}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : i < 23 ? `2026-${String(i-10).padStart(2,'0')}-07` : '2027-01-07',
-                        amount: 87.77,
-                        status: i < 21 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Acordo Matheus Nubank",
-                    totalAmount: 3091.43,
-                    installmentsCount: 23,
-                    installments: Array.from({length: 23}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-19` : `2026-${String(i-10).padStart(2,'0')}-19`,
-                        amount: 134.41,
-                        status: 'Pago'
-                    }))
-                },
-                {
-                    name: "Acordo Matheus Carrefour",
-                    totalAmount: 1951.64,
-                    installmentsCount: 19,
-                    installments: Array.from({length: 19}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : `2026-${String(i-10).padStart(2,'0')}-07`,
-                        amount: 102.56,
-                        status: 'Pago'
-                    }))
-                },
-                {
-                    name: "Acordo Matheus Banco Brasil",
-                    totalAmount: 1300.01,
-                    installmentsCount: 10,
-                    installments: Array.from({length: 10}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+3).padStart(2,'0')}-02`,
-                        amount: i === 0 ? 140.00 : 128.89,
-                        status: i < 8 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Seguro Brascar",
-                    totalAmount: 1870.00,
-                    installmentsCount: 12,
-                    installments: Array.from({length: 12}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
-                        amount: i < 2 ? 175.00 : 154.00,
-                        status: i < 10 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Faculdade",
-                    totalAmount: 1928.22,
-                    installmentsCount: 12,
-                    installments: Array.from({length: 12}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
-                        amount: i < 7 ? 150.00 : 171.37,
-                        status: i < 10 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Conta Celular Vivo",
-                    totalAmount: 1200.00,
-                    installmentsCount: 12,
-                    installments: Array.from({length: 12}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+1).padStart(2,'0')}-21`,
-                        amount: 100.00,
-                        status: i < 9 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Conta Internet OI",
-                    totalAmount: 1380.00,
-                    installmentsCount: 12,
-                    installments: Array.from({length: 12}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
-                        amount: 115.00,
-                        status: i < 9 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Cartao BRB CONECT",
-                    totalAmount: 973.16,
-                    installmentsCount: 12,
-                    installments: Array.from({length: 12}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+1).padStart(2,'0')}-08`,
-                        amount: i === 0 ? 973.16 : 0.00,
-                        status: i < 10 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Cartao BRB GOLD",
-                    totalAmount: 706.40,
-                    installmentsCount: 12,
-                    installments: Array.from({length: 12}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
-                        amount: i === 0 ? 706.40 : 0.00,
-                        status: i < 10 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Carro Corsa Max",
-                    totalAmount: 21360.00,
-                    installmentsCount: 10,
-                    installments: Array.from({length: 10}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+3).padStart(2,'0')}-10`,
-                        amount: 2136.00,
-                        status: i < 8 ? 'Pago' : 'Pendente'
-                    }))
-                },
-                {
-                    name: "Conta IPTV",
-                    totalAmount: 420.00,
-                    installmentsCount: 12,
-                    installments: Array.from({length: 12}, (_, i) => ({
-                        number: i + 1,
-                        dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
-                        amount: 35.00,
-                        status: i < 10 ? 'Pago' : 'Pendente'
-                    }))
-                }
-            ];
-
-            for (const d of initialData) {
-                if (!existingNames.includes(d.name)) {
-                    await addDoc(collection(db, "debts_tracker"), d);
+                if (!id.startsWith('plan-')) {
+                    await deleteDoc(doc(db, "debts_tracker", id));
                 }
             }
         };
