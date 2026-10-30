@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FinanControl - Controle de Dívidas & Acordos</title>
+    <title>FinanControl - Gestão de Dívidas & Permissões</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -30,20 +30,20 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full font-sans antialiased transition-colors duration-200">
 
-    <!-- SCREEN 1: LOGIN -->
+    <!-- TELA 1: LOGIN -->
     <div id="screen-login" class="min-h-screen flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-900">
         <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8 space-y-6">
             <div class="text-center space-y-2">
                 <div class="inline-flex bg-brand-600 text-white p-3 rounded-2xl shadow-lg shadow-brand-500/30 mb-2">
-                    <i data-lucide="wallet" class="w-8 h-8"></i>
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-white">FinanControl</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Controle Pessoal de Dívidas & Acordos</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Acesso Restrito & Gestão de Dívidas</p>
             </div>
 
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">E-mail</label>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">E-mail de Acesso</label>
                     <div class="relative">
                         <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
                         <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 outline-none">
@@ -68,10 +68,10 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: DASHBOARD -->
+    <!-- TELA 2: PAINEL PRINCIPAL -->
     <div id="screen-app" class="hidden min-h-screen flex flex-col md:flex-row pb-20 md:pb-0">
 
-        <!-- Sidebar -->
+        <!-- Sidebar Desktop -->
         <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-4 sticky top-0 h-screen z-20">
             <div class="flex items-center gap-3 px-2 py-3 mb-6">
                 <div class="bg-brand-600 text-white p-2 rounded-xl shadow-lg shadow-brand-500/30">
@@ -79,7 +79,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-lg text-slate-900 dark:text-white leading-tight">FinanControl</h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Gestão de Dívidas</p>
+                    <p id="user-role-badge" class="text-[11px] font-semibold text-brand-600 dark:text-brand-400">Sessão Ativa</p>
                 </div>
             </div>
 
@@ -90,11 +90,16 @@
                 </button>
                 <button onclick="switchTab('debts')" id="dt-nav-debts" class="nav-btn-desktop w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
                     <i data-lucide="receipt" class="w-5 h-5"></i>
-                    Minhas Dívidas
+                    Gerenciar Dívidas
+                </button>
+                <button onclick="switchTab('profiles')" id="dt-nav-profiles" class="nav-btn-desktop w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    Gerenciar Acessos
                 </button>
             </nav>
 
             <div class="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                <div class="px-3 py-1 text-[11px] text-slate-400 truncate" id="logged-user-email"></div>
                 <button onclick="toggleTheme()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700/50">
                     <span class="flex items-center gap-2">
                         <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
@@ -109,34 +114,15 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
+        <!-- Conteúdo Principal -->
         <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
-
-            <!-- Mobile Top Header -->
-            <header class="flex md:hidden items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
-                <div class="flex items-center gap-2">
-                    <div class="bg-brand-600 text-white p-1.5 rounded-lg">
-                        <i data-lucide="wallet" class="w-5 h-5"></i>
-                    </div>
-                    <span class="font-bold text-slate-900 dark:text-white">FinanControl</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
-                        <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
-                        <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
-                    </button>
-                    <button onclick="handleLogout()" class="p-2 rounded-lg bg-rose-100 text-rose-600">
-                        <i data-lucide="log-out" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </header>
 
             <!-- TAB 1: VISÃO GERAL -->
             <section id="tab-dashboard" class="tab-content space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Resumo Financeiro</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Visão consolidada de todas as dívidas, próximos vencimentos e pagamentos.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Exibindo apenas as contas que o seu utilizador tem permissão de visualizar.</p>
                     </div>
                     <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -144,17 +130,25 @@
                     </button>
                 </div>
 
+                <!-- SELETOR DINÂMICO DE PERFIL COM CONTROLE DE PRIVACIDADE -->
+                <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-400 px-2 flex items-center gap-1">
+                        <i data-lucide="filter" class="w-3.5 h-3.5"></i> Perfil Permitido:
+                    </span>
+                    <div id="profile-buttons-container" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+
                 <!-- Cards Totais -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total das Dívidas</span>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Visível</span>
                             <div class="p-2 bg-blue-50 dark:bg-slate-700 text-blue-600 rounded-lg">
                                 <i data-lucide="dollar-sign" class="w-4 h-4"></i>
                             </div>
                         </div>
                         <p id="stat-total-debt" class="text-2xl font-bold text-slate-900 dark:text-white">R$ 0,00</p>
-                        <span class="text-xs text-slate-400">Valor global das 12 contas</span>
+                        <span id="stat-profile-label" class="text-xs text-slate-400">Consolidado das permissões</span>
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -165,62 +159,66 @@
                             </div>
                         </div>
                         <p id="stat-total-paid" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</p>
-                        <span class="text-xs text-slate-400">Parcelas quitadas até hoje</span>
+                        <span class="text-xs text-slate-400">Parcelas quitadas</span>
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Saldo Devedor Restante</span>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Saldo Devedor</span>
                             <div class="p-2 bg-rose-50 dark:bg-slate-700 text-rose-600 rounded-lg">
                                 <i data-lucide="alert-circle" class="w-4 h-4"></i>
                             </div>
                         </div>
                         <p id="stat-total-remaining" class="text-2xl font-bold text-rose-600 dark:text-rose-400">R$ 0,00</p>
-                        <span class="text-xs text-slate-400">Valor pendente a quitar</span>
+                        <span class="text-xs text-slate-400">Pendente de pagamento</span>
                     </div>
                 </div>
 
-                <!-- Lista de Cartões por Dívida com Próximo Vencimento -->
+                <!-- Cartões por Dívida -->
                 <div class="space-y-4">
                     <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
                         <i data-lucide="list-checks" class="w-5 h-5 text-brand-600"></i>
-                        Minhas Contas e Acordos Ativos (12 Contas)
+                        Dívidas Autorizadas
                     </h3>
-                    <div id="debts-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <!-- Gerado via JS instantaneamente -->
-                    </div>
+                    <div id="debts-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
             </section>
 
-            <!-- TAB 2: MINHAS DÍVIDAS E DETALHES -->
+            <!-- TAB 2: GERENCIAR DÍVIDAS -->
             <section id="tab-debts" class="tab-content hidden space-y-6">
+                <div id="debt-detail-container" class="space-y-6"></div>
+            </section>
+
+            <!-- TAB 3: GERENCIAR ACESSOS E PERFIS -->
+            <section id="tab-profiles" class="tab-content hidden space-y-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gerenciamento de Dívidas</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Selecione uma conta para ver e alterar o status de cada parcela.</p>
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gerenciamento de Perfis & Permissões</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Defina os e-mails e os perfis aos quais cada pessoa terá acesso.</p>
                 </div>
 
-                <div id="debt-detail-container" class="space-y-6">
-                    <!-- Tabela e detalhes da conta selecionada -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 max-w-xl">
+                    <form onsubmit="handleCreateProfile(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Nome do Novo Perfil *</label>
+                            <input type="text" id="new-profile-name" required placeholder="Ex: Usuário Terceiro, Empresa X..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">E-mail de Login do Usuário *</label>
+                            <input type="email" id="new-profile-email" required placeholder="email.do.usuario@exemplo.com" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-1 shadow-md">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Cadastrar Perfil & Vincular Acesso
+                        </button>
+                    </form>
+
+                    <div id="profiles-list-container" class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700"></div>
                 </div>
             </section>
 
         </main>
-
-        <!-- Bottom Nav Mobile -->
-        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-2 flex justify-around items-center z-30 shadow-lg">
-            <button onclick="switchTab('dashboard')" class="flex flex-col items-center gap-1 text-brand-600 font-medium text-xs">
-                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-                Visão Geral
-            </button>
-            <button onclick="switchTab('debts')" class="flex flex-col items-center gap-1 text-slate-500 font-medium text-xs">
-                <i data-lucide="receipt" class="w-5 h-5"></i>
-                Dívidas
-            </button>
-        </nav>
-
     </div>
 
-    <!-- MODAL: CADASTRAR NOVA DÍVIDA COM DIVISÃO AUTOMÁTICA -->
+    <!-- MODAL: CADASTRAR NOVA DÍVIDA -->
     <div id="modal-new-debt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-700">
@@ -234,7 +232,12 @@
             <form onsubmit="handleCreateDebt(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Nome do Credor / Conta *</label>
-                    <input type="text" id="debt-name" required placeholder="Ex: Acordo Banco X, Cartão Y, Financiamento..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                    <input type="text" id="debt-name" required placeholder="Ex: Cartão, Financiamento..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Atribuir a qual(is) Perfil(is)? *</label>
+                    <div id="modal-profiles-checkbox-grid" class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -257,11 +260,6 @@
                         <label class="block text-xs font-medium text-slate-500 mb-1">1º Vencimento *</label>
                         <input type="date" id="debt-start-date" required class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
                     </div>
-                </div>
-
-                <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-xs text-slate-500 space-y-1">
-                    <p class="font-semibold text-slate-700 dark:text-slate-300">💡 Regra Inteligente de Vencimento:</p>
-                    <p>Se alguma parcela cair em um final de semana (sábado ou domingo), o vencimento será prorrogado automaticamente para o próximo dia útil (segunda-feira).</p>
                 </div>
 
                 <div class="pt-2 flex justify-end gap-2">
@@ -296,161 +294,57 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // BASE DE DADOS COMPLETA DA SUA PLANILHA (12 CONTAS REAIS)
+        // MAPEAMENTO DOS E-MAILS REAIS REGISTADOS NO CONSOLE DO FIREBASE
+        const userPermissionsMap = {
+            "t.f.matheus96@gmail.com": { role: "ADMIN", allowedProfiles: ["Matheus Faula", "Dayane Azevedo"] },
+            "dayaneazevedo88@gmail.com": { role: "USER", allowedProfiles: ["Dayane Azevedo"] }
+        };
+
+        let currentLoggedEmail = "";
+        let currentUserPermissions = { role: "USER", allowedProfiles: [] };
+
+        let customProfiles = [
+            { name: "Matheus Faula", email: "t.f.matheus96@gmail.com" },
+            { name: "Dayane Azevedo", email: "dayaneazevedo88@gmail.com" }
+        ];
+
         const initialPlanData = [
-            {
-                id: "plan-1",
-                name: "Acordo Pai Porto Seguro",
-                totalAmount: 2106.48,
-                installmentsCount: 24,
-                installments: Array.from({length: 24}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : i < 23 ? `2026-${String(i-10).padStart(2,'0')}-07` : '2027-01-07',
-                    amount: 87.77,
-                    status: i < 21 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-2",
-                name: "Acordo Matheus Nubank",
-                totalAmount: 3091.43,
-                installmentsCount: 23,
-                installments: Array.from({length: 23}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-19` : `2026-${String(i-10).padStart(2,'0')}-19`,
-                    amount: 134.41,
-                    status: 'Pago'
-                }))
-            },
-            {
-                id: "plan-3",
-                name: "Acordo Matheus Carrefour",
-                totalAmount: 1951.64,
-                installmentsCount: 19,
-                installments: Array.from({length: 19}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : `2026-${String(i-10).padStart(2,'0')}-07`,
-                    amount: 102.56,
-                    status: 'Pago'
-                }))
-            },
-            {
-                id: "plan-4",
-                name: "Acordo Matheus Banco Brasil",
-                totalAmount: 1300.01,
-                installmentsCount: 10,
-                installments: Array.from({length: 10}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+3).padStart(2,'0')}-02`,
-                    amount: i === 0 ? 140.00 : 128.89,
-                    status: i < 8 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-5",
-                name: "Seguro Brascar",
-                totalAmount: 1870.00,
-                installmentsCount: 12,
-                installments: Array.from({length: 12}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
-                    amount: i < 2 ? 175.00 : 154.00,
-                    status: i < 10 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-6",
-                name: "Faculdade",
-                totalAmount: 1928.22,
-                installmentsCount: 12,
-                installments: Array.from({length: 12}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
-                    amount: i < 7 ? 150.00 : 171.37,
-                    status: i < 10 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-7",
-                name: "Conta Celular Vivo",
-                totalAmount: 1200.00,
-                installmentsCount: 12,
-                installments: Array.from({length: 12}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+1).padStart(2,'0')}-21`,
-                    amount: 100.00,
-                    status: i < 9 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-8",
-                name: "Conta Internet OI",
-                totalAmount: 1380.00,
-                installmentsCount: 12,
-                installments: Array.from({length: 12}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
-                    amount: 115.00,
-                    status: i < 9 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-9",
-                name: "Cartao BRB CONECT",
-                totalAmount: 973.16,
-                installmentsCount: 12,
-                installments: Array.from({length: 12}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+1).padStart(2,'0')}-08`,
-                    amount: i === 0 ? 973.16 : 0.00,
-                    status: i < 10 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-10",
-                name: "Cartao BRB GOLD",
-                totalAmount: 706.40,
-                installmentsCount: 12,
-                installments: Array.from({length: 12}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+1).padStart(2,'0')}-20`,
-                    amount: i === 0 ? 706.40 : 0.00,
-                    status: i < 10 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-11",
-                name: "Carro Corsa Max",
-                totalAmount: 21360.00,
-                installmentsCount: 10,
-                installments: Array.from({length: 10}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+3).padStart(2,'0')}-10`,
-                    amount: 2136.00,
-                    status: i < 8 ? 'Pago' : 'Pendente'
-                }))
-            },
-            {
-                id: "plan-12",
-                name: "Conta IPTV",
-                totalAmount: 420.00,
-                installmentsCount: 12,
-                installments: Array.from({length: 12}, (_, i) => ({
-                    number: i + 1,
-                    dueDate: `2026-${String(i+1).padStart(2,'0')}-18`,
-                    amount: 35.00,
-                    status: i < 10 ? 'Pago' : 'Pendente'
-                }))
-            }
+            { id: "plan-1", name: "Acordo Pai Porto Seguro", owners: ["Matheus Faula"], totalAmount: 2106.48, installmentsCount: 24, installments: Array.from({length: 24}, (_, i) => ({ number: i + 1, dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : i < 23 ? `2026-${String(i-10).padStart(2,'0')}-07` : '2027-01-07', amount: 87.77, status: i < 21 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-2", name: "Acordo Matheus Nubank", owners: ["Matheus Faula"], totalAmount: 3091.43, installmentsCount: 23, installments: Array.from({length: 23}, (_, i) => ({ number: i + 1, dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-19` : `2026-${String(i-10).padStart(2,'0')}-19`, amount: 134.41, status: 'Pago' })) },
+            { id: "plan-3", name: "Acordo Matheus Carrefour", owners: ["Matheus Faula"], totalAmount: 1951.64, installmentsCount: 19, installments: Array.from({length: 19}, (_, i) => ({ number: i + 1, dueDate: i < 11 ? `2025-${String(i+2).padStart(2,'0')}-07` : `2026-${String(i-10).padStart(2,'0')}-07`, amount: 102.56, status: 'Pago' })) },
+            { id: "plan-4", name: "Acordo Matheus Banco Brasil", owners: ["Matheus Faula"], totalAmount: 1300.01, installmentsCount: 10, installments: Array.from({length: 10}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+3).padStart(2,'0')}-02`, amount: i === 0 ? 140.00 : 128.89, status: i < 8 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-5", name: "Seguro Brascar", owners: ["Matheus Faula"], totalAmount: 1870.00, installmentsCount: 12, installments: Array.from({length: 12}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+1).padStart(2,'0')}-20`, amount: i < 2 ? 175.00 : 154.00, status: i < 10 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-6", name: "Faculdade", owners: ["Matheus Faula"], totalAmount: 1928.22, installmentsCount: 12, installments: Array.from({length: 12}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+1).padStart(2,'0')}-20`, amount: i < 7 ? 150.00 : 171.37, status: i < 10 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-7", name: "Conta Celular Vivo", owners: ["Matheus Faula"], totalAmount: 1200.00, installmentsCount: 12, installments: Array.from({length: 12}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+1).padStart(2,'0')}-21`, amount: 100.00, status: i < 9 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-8", name: "Conta Internet OI", owners: ["Matheus Faula"], totalAmount: 1380.00, installmentsCount: 12, installments: Array.from({length: 12}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+1).padStart(2,'0')}-18`, amount: 115.00, status: i < 9 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-9", name: "Cartao BRB CONECT", owners: ["Matheus Faula"], totalAmount: 973.16, installmentsCount: 12, installments: Array.from({length: 12}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+1).padStart(2,'0')}-08`, amount: i === 0 ? 973.16 : 0.00, status: i < 10 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-10", name: "Cartao BRB GOLD", owners: ["Matheus Faula"], totalAmount: 706.40, installmentsCount: 12, installments: Array.from({length: 12}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+1).padStart(2,'0')}-20`, amount: i === 0 ? 706.40 : 0.00, status: i < 10 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-11", name: "Carro Corsa Max", owners: ["Matheus Faula"], totalAmount: 21360.00, installmentsCount: 10, installments: Array.from({length: 10}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+3).padStart(2,'0')}-10`, amount: 2136.00, status: i < 8 ? 'Pago' : 'Pendente' })) },
+            { id: "plan-12", name: "Conta IPTV", owners: ["Matheus Faula"], totalAmount: 420.00, installmentsCount: 12, installments: Array.from({length: 12}, (_, i) => ({ number: i + 1, dueDate: `2026-${String(i+1).padStart(2,'0')}-18`, amount: 35.00, status: i < 10 ? 'Pago' : 'Pendente' })) }
         ];
 
         let debtsList = [...initialPlanData];
+        let selectedFilterProfile = 'TODOS';
         let selectedDebtId = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                currentLoggedEmail = user.email ? user.email.toLowerCase() : "";
+                document.getElementById('logged-user-email').innerText = currentLoggedEmail;
+
+                if (userPermissionsMap[currentLoggedEmail]) {
+                    currentUserPermissions = userPermissionsMap[currentLoggedEmail];
+                } else {
+                    currentUserPermissions = { role: "USER", allowedProfiles: [] };
+                }
+
+                document.getElementById('user-role-badge').innerText = currentUserPermissions.role === 'ADMIN' ? '⚡ Administrador' : '🔒 Acesso Restrito';
+
                 document.getElementById('screen-login').classList.add('hidden');
                 document.getElementById('screen-app').classList.remove('hidden');
+
+                renderProfileButtons();
+                renderProfilesManagerList();
                 renderDashboard();
                 initFirestoreListeners();
             } else {
@@ -469,25 +363,16 @@
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
             } catch (err) {
-                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-                    errDiv.innerText = "Usuário não encontrado ou e-mail inválido.";
-                } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                    errDiv.innerText = "Senha incorreta. Tente novamente.";
-                } else {
-                    errDiv.innerText = "Falha no login: Usuário ou senha incorretos.";
-                }
+                errDiv.innerText = "Usuário ou senha incorretos.";
                 errDiv.classList.remove('hidden');
             }
         };
 
-        window.handleLogout = function() {
-            signOut(auth);
-        };
+        window.handleLogout = function() { signOut(auth); };
 
         function initFirestoreListeners() {
             onSnapshot(collection(db, "debts_tracker"), (snapshot) => {
                 const cloudDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                
                 if (cloudDocs.length > 0) {
                     cloudDocs.forEach(cDoc => {
                         const index = debtsList.findIndex(d => d.name === cDoc.name || d.id === cDoc.id);
@@ -499,83 +384,73 @@
                     });
                 }
                 renderDashboard();
-                if (selectedDebtId) {
-                    renderDebtDetails(selectedDebtId);
-                }
+                if (selectedDebtId) renderDebtDetails(selectedDebtId);
             });
         }
 
-        function getNextBusinessDay(dateStr) {
-            const parts = dateStr.split('-');
-            let dt = new Date(parts[0], parts[1] - 1, parts[2]);
-            const dayOfWeek = dt.getDay();
-            
-            if (dayOfWeek === 6) {
-                dt.setDate(dt.getDate() + 2);
-            } else if (dayOfWeek === 0) {
-                dt.setDate(dt.getDate() + 1);
-            }
+        window.handleCreateProfile = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-profile-name').value.trim();
+            const email = document.getElementById('new-profile-email').value.trim().toLowerCase();
 
-            const y = dt.getFullYear();
-            const m = String(dt.getMonth() + 1).padStart(2, '0');
-            const d = String(dt.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+            if (name && email) {
+                customProfiles.push({ name, email });
+                userPermissionsMap[email] = { role: "USER", allowedProfiles: [name] };
+                document.getElementById('new-profile-name').value = '';
+                document.getElementById('new-profile-email').value = '';
+
+                renderProfileButtons();
+                renderProfilesManagerList();
+                alert(`Perfil "${name}" vinculado ao e-mail ${email} com sucesso!`);
+            }
+        };
+
+        function renderProfilesManagerList() {
+            const container = document.getElementById('profiles-list-container');
+            if (!container) return;
+            container.innerHTML = customProfiles.map(p => `
+                <div class="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-xs">
+                    <div>
+                        <strong class="block text-slate-800 dark:text-slate-200">${p.name}</strong>
+                        <span class="text-slate-400">${p.email}</span>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
         }
 
-        window.autoCalculateInstallments = function() {
-            const total = parseFloat(document.getElementById('debt-total-val').value) || 0;
-            const count = parseInt(document.getElementById('debt-installments-count').value) || 1;
-            if (total > 0 && count > 0) {
-                const perInstallment = (total / count).toFixed(2);
-                document.getElementById('debt-installment-val').value = perInstallment;
-            }
-        };
+        function renderProfileButtons() {
+            const container = document.getElementById('profile-buttons-container');
+            if (!container) return;
 
-        window.handleCreateDebt = async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('debt-name').value;
-            const totalVal = parseFloat(document.getElementById('debt-total-val').value);
-            const count = parseInt(document.getElementById('debt-installments-count').value);
-            const perVal = parseFloat(document.getElementById('debt-installment-val').value);
-            const startDateStr = document.getElementById('debt-start-date').value;
+            let visibleProfiles = customProfiles.filter(p => {
+                if (currentUserPermissions.role === 'ADMIN') return true;
+                return currentUserPermissions.allowedProfiles.includes(p.name);
+            }).map(p => p.name);
 
-            const startParts = startDateStr.split('-');
-            const origDay = parseInt(startParts[2]);
-            const origMonth = parseInt(startParts[1]) - 1;
-            const origYear = parseInt(startParts[0]);
+            const allOptions = currentUserPermissions.role === 'ADMIN' ? ['TODOS', ...visibleProfiles] : visibleProfiles;
 
-            let installments = [];
-
-            for (let i = 0; i < count; i++) {
-                let targetDate = new Date(origYear, origMonth + i, origDay);
-                let y = targetDate.getFullYear();
-                let m = String(targetDate.getMonth() + 1).padStart(2, '0');
-                let d = String(targetDate.getDate()).padStart(2, '0');
-                let rawDateStr = `${y}-${m}-${d}`;
-
-                let adjustedDateStr = getNextBusinessDay(rawDateStr);
-
-                installments.push({
-                    number: i + 1,
-                    dueDate: adjustedDateStr,
-                    amount: perVal,
-                    status: 'Pendente'
-                });
+            if (!allOptions.includes(selectedFilterProfile)) {
+                selectedFilterProfile = allOptions[0] || 'TODOS';
             }
 
-            const newDebtObj = {
-                name: name,
-                totalAmount: totalVal,
-                installmentsCount: count,
-                installments: installments,
-                createdAt: new Date().toISOString()
-            };
+            container.innerHTML = allOptions.map(p => `
+                <button onclick="setFilterProfile('${p}')" id="btn-profile-${p}" class="profile-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${selectedFilterProfile === p ? 'bg-brand-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}">
+                    ${p === 'TODOS' ? 'Todos Autorizados' : p}
+                </button>
+            `).join('');
+        }
 
-            await addDoc(collection(db, "debts_tracker"), newDebtObj);
-            toggleNewDebtModal(false);
-            document.getElementById('debt-name').value = '';
-            document.getElementById('debt-total-val').value = '';
+        window.setFilterProfile = function(p) {
+            selectedFilterProfile = p;
+            renderProfileButtons();
+            renderDashboard();
         };
+
+        function isOverdue(dueDateStr) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            return dueDateStr < todayStr;
+        }
 
         function renderDashboard() {
             let grandTotal = 0;
@@ -584,33 +459,54 @@
             const grid = document.getElementById('debts-cards-grid');
             if (!grid) return;
 
-            grid.innerHTML = debtsList.map(debt => {
+            const filteredDebts = debtsList.filter(d => {
+                const ownersList = d.owners || (d.owner ? [d.owner] : ['Matheus Faula']);
+                
+                if (currentUserPermissions.role !== 'ADMIN') {
+                    const hasAccess = ownersList.some(owner => currentUserPermissions.allowedProfiles.includes(owner));
+                    if (!hasAccess) return false;
+                }
+
+                if (selectedFilterProfile === 'TODOS') return true;
+                return ownersList.includes(selectedFilterProfile);
+            });
+
+            document.getElementById('stat-profile-label').innerText = selectedFilterProfile === 'TODOS' ? 'Total do Seu Acesso' : `Dívidas de: ${selectedFilterProfile}`;
+
+            grid.innerHTML = filteredDebts.map(debt => {
+                const ownersList = debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']);
                 const total = debt.installments.reduce((acc, item) => acc + item.amount, 0);
                 const paid = debt.installments.filter(item => item.status === 'Pago').reduce((acc, item) => acc + item.amount, 0);
                 const remaining = total - paid;
                 const paidCount = debt.installments.filter(item => item.status === 'Pago').length;
                 const progressPct = Math.round((paidCount / debt.installments.length) * 100) || 0;
 
-                // Localiza a próxima parcela pendente para mostrar a data de vencimento
                 const nextPending = debt.installments.find(item => item.status === 'Pendente');
+                const hasAtraso = nextPending && isOverdue(nextPending.dueDate);
 
                 grandTotal += total;
                 grandPaid += paid;
 
                 return `
-                    <div onclick="selectAndShowDebt('${debt.id}')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-brand-500 cursor-pointer transition-all space-y-4">
+                    <div onclick="selectAndShowDebt('${debt.id}')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border ${hasAtraso ? 'border-rose-300 dark:border-rose-900 shadow-rose-100 dark:shadow-none' : 'border-slate-200 dark:border-slate-700'} shadow-sm hover:border-brand-500 cursor-pointer transition-all space-y-4">
                         <div class="flex items-center justify-between">
-                            <h4 class="font-bold text-slate-900 dark:text-white text-base">${debt.name}</h4>
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${remaining === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-                                ${remaining === 0 ? 'Quitado' : `${paidCount}/${debt.installments.length} Pagas`}
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white text-base leading-tight">${debt.name}</h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                    👤 ${ownersList.join(' + ')}
+                                </span>
+                            </div>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${remaining === 0 ? 'bg-emerald-100 text-emerald-700' : hasAtraso ? 'bg-rose-100 text-rose-700 font-extrabold animate-pulse' : 'bg-amber-100 text-amber-700'}">
+                                ${remaining === 0 ? 'Quitado' : hasAtraso ? 'EM ATRASO' : `${paidCount}/${debt.installments.length} Pagas`}
                             </span>
                         </div>
 
-                        <!-- Data e Valor da Próxima Parcela em Destaque -->
-                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs">
+                        <div class="p-3 rounded-xl ${hasAtraso ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700'} border flex justify-between items-center text-xs">
                             <div>
-                                <span class="text-slate-400 block text-[11px]">Próximo Vencimento</span>
-                                <strong class="text-slate-800 dark:text-slate-200 font-bold">
+                                <span class="${hasAtraso ? 'text-rose-600 font-semibold' : 'text-slate-400'} block text-[11px]">
+                                    ${hasAtraso ? '⚠️ Vencimento Atrasado' : 'Próximo Vencimento'}
+                                </span>
+                                <strong class="${hasAtraso ? 'text-rose-700 dark:text-rose-400 font-extrabold' : 'text-slate-800 dark:text-slate-200 font-bold'}">
                                     ${nextPending ? nextPending.dueDate.split('-').reverse().join('/') : 'Nenhum pendente'}
                                 </strong>
                             </div>
@@ -653,105 +549,18 @@
             lucide.createIcons();
         }
 
-        window.selectAndShowDebt = function(id) {
-            selectedDebtId = id;
-            switchTab('debts');
-            renderDebtDetails(id);
-        };
-
-        function renderDebtDetails(id) {
-            const container = document.getElementById('debt-detail-container');
-            const debt = debtsList.find(d => d.id === id);
-
-            if (!debt) {
-                container.innerHTML = `<p class="text-slate-400 text-sm">Selecione uma conta na Visão Geral.</p>`;
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <button onclick="switchTab('dashboard')" class="text-xs text-brand-600 font-medium hover:underline mb-1 inline-flex items-center gap-1">
-                                ← Voltar para Visão Geral
-                            </button>
-                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">${debt.name}</h3>
-                        </div>
-                        <button onclick="deleteDebt('${debt.id}')" class="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-1">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Esta Dívida
-                        </button>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-400">
-                                    <th class="py-3 px-2">Parcela</th>
-                                    <th class="py-3 px-2">Vencimento (Ajustado)</th>
-                                    <th class="py-3 px-2">Valor</th>
-                                    <th class="py-3 px-2">Status</th>
-                                    <th class="py-3 px-2 text-right">Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
-                                ${debt.installments.map((inst, index) => `
-                                    <tr>
-                                        <td class="py-3 px-2 font-bold">${inst.number}ª Parcela</td>
-                                        <td class="py-3 px-2">${inst.dueDate.split('-').reverse().join('/')}</td>
-                                        <td class="py-3 px-2 font-semibold">R$ ${inst.amount.toFixed(2)}</td>
-                                        <td class="py-3 px-2">
-                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${inst.status === 'Pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-                                                ${inst.status}
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-2 text-right">
-                                            <button onclick="toggleInstallmentStatus('${debt.id}', '${inst.number}')" class="px-3 py-1.5 rounded-lg text-xs font-medium ${inst.status === 'Pago' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
-                                                ${inst.status === 'Pago' ? 'Marcar Pendente' : 'Marcar como Pago'}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-
-            lucide.createIcons();
-        }
-
-        window.toggleInstallmentStatus = async function(debtId, instNumber) {
-            const debt = debtsList.find(d => d.id === debtId);
-            if (!debt) return;
-
-            const instIndex = debt.installments.findIndex(i => String(i.number) === String(instNumber));
-            if (instIndex === -1) return;
-
-            debt.installments[instIndex].status = debt.installments[instIndex].status === 'Pago' ? 'Pendente' : 'Pago';
-
-            renderDashboard();
-            renderDebtDetails(debtId);
-
-            if (!debt.id.startsWith('plan-')) {
-                await updateDoc(doc(db, "debts_tracker", debtId), {
-                    installments: debt.installments
-                });
-            }
-        };
-
-        window.deleteDebt = async function(id) {
-            if (confirm("Deseja realmente apagar esta dívida e todo o histórico?")) {
-                debtsList = debtsList.filter(d => d.id !== id);
-                renderDashboard();
-                switchTab('dashboard');
-
-                if (!id.startsWith('plan-')) {
-                    await deleteDoc(doc(db, "debts_tracker", id));
+        window.toggleNewDebtModal = function(show) {
+            if (show) {
+                const grid = document.getElementById('modal-profiles-checkbox-grid');
+                if (grid) {
+                    grid.innerHTML = customProfiles.map((p, i) => `
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <input type="checkbox" name="debt-owners-check" value="${p.name}" ${i === 0 ? 'checked' : ''} class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+                            ${p.name}
+                        </label>
+                    `).join('');
                 }
             }
-        };
-
-        window.toggleNewDebtModal = function(show) {
             document.getElementById('modal-new-debt').classList.toggle('hidden', !show);
         };
 
