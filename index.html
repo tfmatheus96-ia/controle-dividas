@@ -138,10 +138,16 @@
                         <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Resumo Financeiro</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Visão consolidada de todas as dívidas e pagamentos efetuados.</p>
                     </div>
-                    <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                        Nova Dívida / Acordo
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="forceSeedAllPlanData()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2.5 rounded-xl font-medium text-xs flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            Carregar Todas da Planilha
+                        </button>
+                        <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            Nova Dívida / Acordo
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Cards Totais -->
@@ -282,7 +288,6 @@
             getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-        // Configuração do seu novo banco de dados no Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCMxu8uksx9Ws0Ffmt5V2nBJ6KH1tZJn4U",
             authDomain: "financontrol-dividas.firebaseapp.com",
@@ -340,8 +345,9 @@
             onSnapshot(collection(db, "debts_tracker"), (snapshot) => {
                 debtsList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 
-                if (debtsList.length === 0) {
-                    seedDefaultPlanData();
+                // Se só tiver a 1ª dívida ou nenhuma, popula todas as 12 dívidas da planilha
+                if (debtsList.length <= 1) {
+                    forceSeedAllPlanData();
                 } else {
                     renderDashboard();
                     if (selectedDebtId) {
@@ -354,11 +360,11 @@
         function getNextBusinessDay(dateStr) {
             const parts = dateStr.split('-');
             let dt = new Date(parts[0], parts[1] - 1, parts[2]);
-            const dayOfWeek = dt.getDay(); // 0 = Dom, 6 = Sáb
+            const dayOfWeek = dt.getDay();
             
-            if (dayOfWeek === 6) { // Sábado -> Soma 2 dias
+            if (dayOfWeek === 6) {
                 dt.setDate(dt.getDate() + 2);
-            } else if (dayOfWeek === 0) { // Domingo -> Soma 1 dia
+            } else if (dayOfWeek === 0) {
                 dt.setDate(dt.getDate() + 1);
             }
 
@@ -566,8 +572,9 @@
             }
         };
 
-        // Carga inicial completa com todas as 12 despesas/acordos da sua planilha
-        async function seedDefaultPlanData() {
+        // Força a inserção de TODAS as 12 dívidas da sua planilha
+        window.forceSeedAllPlanData = async function() {
+            const existingNames = debtsList.map(d => d.name);
             const initialData = [
                 {
                     name: "Acordo Pai Porto Seguro",
@@ -704,9 +711,11 @@
             ];
 
             for (const d of initialData) {
-                await addDoc(collection(db, "debts_tracker"), d);
+                if (!existingNames.includes(d.name)) {
+                    await addDoc(collection(db, "debts_tracker"), d);
+                }
             }
-        }
+        };
 
         window.toggleNewDebtModal = function(show) {
             document.getElementById('modal-new-debt').classList.toggle('hidden', !show);
