@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FinanControl - Gestão de Dívidas & Permissões</title>
+    <title>FinanControl - Gestão de Dívidas & Permissões Automáticas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -122,7 +122,7 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Resumo Financeiro</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Exibindo apenas as contas que o seu utilizador tem permissão de visualizar.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Exibindo apenas as contas que o seu usuário tem permissão de visualizar.</p>
                     </div>
                     <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -200,14 +200,14 @@
                     <form onsubmit="handleCreateProfile(event)" class="space-y-3">
                         <div>
                             <label class="block text-xs font-medium text-slate-500 mb-1">Nome do Novo Perfil *</label>
-                            <input type="text" id="new-profile-name" required placeholder="Ex: Usuário Terceiro, Empresa X..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
+                            <input type="text" id="new-profile-name" required placeholder="Ex: Terceiro, Empresa X..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-500 mb-1">E-mail de Login do Usuário *</label>
                             <input type="email" id="new-profile-email" required placeholder="email.do.usuario@exemplo.com" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none">
                         </div>
                         <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-1 shadow-md">
-                            <i data-lucide="user-plus" class="w-4 h-4"></i> Cadastrar Perfil & Vincular Acesso
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Cadastrar Perfil & Salvar no Firestore
                         </button>
                     </form>
 
@@ -277,7 +277,7 @@
             getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
         import { 
-            getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc 
+            getFirestore, collection, onSnapshot, setDoc, doc, addDoc, updateDoc, deleteDoc 
         } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -294,11 +294,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // MAPEAMENTO DOS E-MAILS REAIS REGISTADOS NO CONSOLE DO FIREBASE
-        const userPermissionsMap = {
-            "t.f.matheus96@gmail.com": { role: "ADMIN", allowedProfiles: ["Matheus Faula", "Dayane Azevedo"] },
-            "dayaneazevedo88@gmail.com": { role: "USER", allowedProfiles: ["Dayane Azevedo"] }
-        };
+        // ADMINISTRADORES PADRÃO COM ACESSO TOTAL
+        const defaultAdmins = ["t.f.matheus96@gmail.com", "dayaneazevedo88@gmail.com"];
 
         let currentLoggedEmail = "";
         let currentUserPermissions = { role: "USER", allowedProfiles: [] };
@@ -327,26 +324,17 @@
         let selectedFilterProfile = 'TODOS';
         let selectedDebtId = null;
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentLoggedEmail = user.email ? user.email.toLowerCase() : "";
                 document.getElementById('logged-user-email').innerText = currentLoggedEmail;
 
-                if (userPermissionsMap[currentLoggedEmail]) {
-                    currentUserPermissions = userPermissionsMap[currentLoggedEmail];
-                } else {
-                    currentUserPermissions = { role: "USER", allowedProfiles: [] };
-                }
-
-                document.getElementById('user-role-badge').innerText = currentUserPermissions.role === 'ADMIN' ? '⚡ Administrador' : '🔒 Acesso Restrito';
+                // ESCUTA AUTOMÁTICA DA COLEÇÃO DE PERFIS NO FIRESTORE
+                initUsersListener();
+                initFirestoreListeners();
 
                 document.getElementById('screen-login').classList.add('hidden');
                 document.getElementById('screen-app').classList.remove('hidden');
-
-                renderProfileButtons();
-                renderProfilesManagerList();
-                renderDashboard();
-                initFirestoreListeners();
             } else {
                 document.getElementById('screen-app').classList.add('hidden');
                 document.getElementById('screen-login').classList.remove('hidden');
@@ -370,6 +358,38 @@
 
         window.handleLogout = function() { signOut(auth); };
 
+        // LEITURA E SINCRONIZAÇÃO EM TEMPO REAL DOS PERFIS DO FIRESTORE
+        function initUsersListener() {
+            onSnapshot(collection(db, "app_users"), (snapshot) => {
+                const cloudUsers = snapshot.docs.map(d => d.data());
+                
+                if (cloudUsers.length > 0) {
+                    cloudUsers.forEach(u => {
+                        if (!customProfiles.some(p => p.email === u.email)) {
+                            customProfiles.push({ name: u.name, email: u.email });
+                        }
+                    });
+                }
+
+                // DEFINE PERMISSÕES DO USUÁRIO LOGADO AUTOMATICAMENTE
+                if (defaultAdmins.includes(currentLoggedEmail)) {
+                    currentUserPermissions = { role: "ADMIN", allowedProfiles: customProfiles.map(p => p.name) };
+                } else {
+                    const matchedUser = customProfiles.find(p => p.email === currentLoggedEmail);
+                    currentUserPermissions = { 
+                        role: "USER", 
+                        allowedProfiles: matchedUser ? [matchedUser.name] : [] 
+                    };
+                }
+
+                document.getElementById('user-role-badge').innerText = currentUserPermissions.role === 'ADMIN' ? '⚡ Administrador' : '🔒 Acesso Restrito';
+
+                renderProfileButtons();
+                renderProfilesManagerList();
+                renderDashboard();
+            });
+        }
+
         function initFirestoreListeners() {
             onSnapshot(collection(db, "debts_tracker"), (snapshot) => {
                 const cloudDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -388,20 +408,29 @@
             });
         }
 
-        window.handleCreateProfile = function(e) {
+        // SALVA AUTOMATICAMENTE O NOVO PERFIL NO FIRESTORE
+        window.handleCreateProfile = async function(e) {
             e.preventDefault();
             const name = document.getElementById('new-profile-name').value.trim();
             const email = document.getElementById('new-profile-email').value.trim().toLowerCase();
 
             if (name && email) {
-                customProfiles.push({ name, email });
-                userPermissionsMap[email] = { role: "USER", allowedProfiles: [name] };
+                const newUserDoc = {
+                    name: name,
+                    email: email,
+                    role: "USER",
+                    allowedProfiles: [name],
+                    createdAt: new Date().toISOString()
+                };
+
+                // Grava diretamente no Firestore (ID seguro baseado no e-mail)
+                const safeDocId = email.replace(/[^a-zA-Z0-9]/g, "_");
+                await setDoc(doc(db, "app_users", safeDocId), newUserDoc);
+
                 document.getElementById('new-profile-name').value = '';
                 document.getElementById('new-profile-email').value = '';
 
-                renderProfileButtons();
-                renderProfilesManagerList();
-                alert(`Perfil "${name}" vinculado ao e-mail ${email} com sucesso!`);
+                alert(`Perfil "${name}" criado e salvo no Firestore! O acesso para ${email} está liberado.`);
             }
         };
 
