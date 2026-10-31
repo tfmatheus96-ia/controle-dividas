@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FinanControl - Gestão de Dívidas & Permissões Automáticas</title>
+    <title>FinanControl - Gestão de Dívidas & Permissões</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -122,7 +122,7 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Resumo Financeiro</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Exibindo apenas as contas que o seu usuário tem permissão de visualizar.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Clique em qualquer dívida abaixo para abrir as parcelas e gerenciar o status.</p>
                     </div>
                     <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -130,7 +130,7 @@
                     </button>
                 </div>
 
-                <!-- SELETOR DINÂMICO DE PERFIL COM CONTROLE DE PRIVACIDADE -->
+                <!-- SELETOR DINÂMICO DE PERFIL -->
                 <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
                     <span class="text-xs font-semibold text-slate-400 px-2 flex items-center gap-1">
                         <i data-lucide="filter" class="w-3.5 h-3.5"></i> Perfil Permitido:
@@ -294,7 +294,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // ADMINISTRADORES PADRÃO COM ACESSO TOTAL
         const defaultAdmins = ["t.f.matheus96@gmail.com", "dayaneazevedo88@gmail.com"];
 
         let currentLoggedEmail = "";
@@ -329,7 +328,6 @@
                 currentLoggedEmail = user.email ? user.email.toLowerCase() : "";
                 document.getElementById('logged-user-email').innerText = currentLoggedEmail;
 
-                // ESCUTA AUTOMÁTICA DA COLEÇÃO DE PERFIS NO FIRESTORE
                 initUsersListener();
                 initFirestoreListeners();
 
@@ -358,7 +356,6 @@
 
         window.handleLogout = function() { signOut(auth); };
 
-        // LEITURA E SINCRONIZAÇÃO EM TEMPO REAL DOS PERFIS DO FIRESTORE
         function initUsersListener() {
             onSnapshot(collection(db, "app_users"), (snapshot) => {
                 const cloudUsers = snapshot.docs.map(d => d.data());
@@ -371,7 +368,6 @@
                     });
                 }
 
-                // DEFINE PERMISSÕES DO USUÁRIO LOGADO AUTOMATICAMENTE
                 if (defaultAdmins.includes(currentLoggedEmail)) {
                     currentUserPermissions = { role: "ADMIN", allowedProfiles: customProfiles.map(p => p.name) };
                 } else {
@@ -395,7 +391,7 @@
                 const cloudDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (cloudDocs.length > 0) {
                     cloudDocs.forEach(cDoc => {
-                        const index = debtsList.findIndex(d => d.name === cDoc.name || d.id === cDoc.id);
+                        const index = debtsList.findIndex(d => d.id === cDoc.id || d.name === cDoc.name);
                         if (index !== -1) {
                             debtsList[index] = cDoc;
                         } else {
@@ -408,7 +404,6 @@
             });
         }
 
-        // SALVA AUTOMATICAMENTE O NOVO PERFIL NO FIRESTORE
         window.handleCreateProfile = async function(e) {
             e.preventDefault();
             const name = document.getElementById('new-profile-name').value.trim();
@@ -423,7 +418,6 @@
                     createdAt: new Date().toISOString()
                 };
 
-                // Grava diretamente no Firestore (ID seguro baseado no e-mail)
                 const safeDocId = email.replace(/[^a-zA-Z0-9]/g, "_");
                 await setDoc(doc(db, "app_users", safeDocId), newUserDoc);
 
@@ -577,6 +571,116 @@
 
             lucide.createIcons();
         }
+
+        // FUNÇÃO DE CLIQUE REPARADA: ABRIR DETALHES E EDITAR
+        window.selectAndShowDebt = function(id) {
+            selectedDebtId = id;
+            switchTab('debts');
+            renderDebtDetails(id);
+        };
+
+        function renderDebtDetails(id) {
+            const container = document.getElementById('debt-detail-container');
+            const debt = debtsList.find(d => String(d.id) === String(id));
+
+            if (!debt) {
+                container.innerHTML = `
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-center space-y-3">
+                        <p class="text-slate-500 text-sm">Selecione uma dívida na Visão Geral para visualizar as parcelas.</p>
+                        <button onclick="switchTab('dashboard')" class="bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-medium">Voltar para Visão Geral</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const ownersList = debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']);
+
+            container.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <button onclick="switchTab('dashboard')" class="text-xs text-brand-600 font-medium hover:underline mb-1 inline-flex items-center gap-1">
+                                ← Voltar para Visão Geral
+                            </button>
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">${debt.name}</h3>
+                            <span class="text-xs font-semibold text-slate-400">Responsável(is): ${ownersList.join(', ')}</span>
+                        </div>
+                        <button onclick="deleteDebt('${debt.id}')" class="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Esta Dívida
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-400">
+                                    <th class="py-3 px-2">Parcela</th>
+                                    <th class="py-3 px-2">Vencimento</th>
+                                    <th class="py-3 px-2">Valor</th>
+                                    <th class="py-3 px-2">Status</th>
+                                    <th class="py-3 px-2 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
+                                ${debt.installments.map((inst) => {
+                                    const atrasado = inst.status === 'Pendente' && isOverdue(inst.dueDate);
+                                    return `
+                                        <tr class="${atrasado ? 'bg-rose-50/50 dark:bg-rose-900/10' : ''}">
+                                            <td class="py-3 px-2 font-bold">${inst.number}ª Parcela</td>
+                                            <td class="py-3 px-2 ${atrasado ? 'text-rose-600 font-bold' : ''}">${inst.dueDate.split('-').reverse().join('/')}</td>
+                                            <td class="py-3 px-2 font-semibold">R$ ${inst.amount.toFixed(2)}</td>
+                                            <td class="py-3 px-2">
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${inst.status === 'Pago' ? 'bg-emerald-100 text-emerald-700' : atrasado ? 'bg-rose-100 text-rose-700 font-extrabold animate-pulse' : 'bg-amber-100 text-amber-700'}">
+                                                    ${inst.status === 'Pago' ? 'Pago' : atrasado ? 'EM ATRASO' : 'Pendente'}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-2 text-right">
+                                                <button onclick="toggleInstallmentStatus('${debt.id}', '${inst.number}')" class="px-3 py-1.5 rounded-lg text-xs font-medium ${inst.status === 'Pago' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
+                                                    ${inst.status === 'Pago' ? 'Marcar Pendente' : 'Marcar como Pago'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            lucide.createIcons();
+        }
+
+        window.toggleInstallmentStatus = async function(debtId, instNumber) {
+            const debt = debtsList.find(d => String(d.id) === String(debtId));
+            if (!debt) return;
+
+            const instIndex = debt.installments.findIndex(i => String(i.number) === String(instNumber));
+            if (instIndex === -1) return;
+
+            debt.installments[instIndex].status = debt.installments[instIndex].status === 'Pago' ? 'Pendente' : 'Pago';
+
+            renderDashboard();
+            renderDebtDetails(debtId);
+
+            if (!String(debt.id).startsWith('plan-')) {
+                await updateDoc(doc(db, "debts_tracker", debtId), {
+                    installments: debt.installments
+                });
+            }
+        };
+
+        window.deleteDebt = async function(id) {
+            if (confirm("Deseja realmente apagar esta dívida e todo o histórico?")) {
+                debtsList = debtsList.filter(d => String(d.id) !== String(id));
+                renderDashboard();
+                switchTab('dashboard');
+
+                if (!String(id).startsWith('plan-')) {
+                    await deleteDoc(doc(db, "debts_tracker", id));
+                }
+            }
+        };
 
         window.toggleNewDebtModal = function(show) {
             if (show) {
