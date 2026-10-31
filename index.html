@@ -624,7 +624,10 @@
 
         window.saveSingleDebtToFirestore = async function(debtId) {
             const debt = debtsList.find(d => String(d.id) === String(debtId));
-            if (!debt) return;
+            if (!debt) {
+                alert("Erro ao localizar os dados da dívida.");
+                return;
+            }
 
             try {
                 const safeId = getSafeDocId(debt);
@@ -636,11 +639,11 @@
                     updatedAt: new Date().toISOString()
                 });
 
-                alert(`✅ Alterações salvas no banco de dados! Redirecionando para a Visão Geral...`);
+                alert(`✅ Dados gravados com sucesso! Redirecionando para a Visão Geral...`);
                 switchTab('dashboard');
             } catch (err) {
                 console.error("Erro ao salvar no Firestore:", err);
-                alert("Erro ao salvar no banco de dados.");
+                alert("Erro ao salvar dados no banco.");
             }
         };
 
