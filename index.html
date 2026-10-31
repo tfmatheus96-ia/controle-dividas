@@ -121,7 +121,7 @@
         <!-- Conteúdo Principal -->
         <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
 
-            <!-- TAB 1: VISÃO GERAL -->
+            <!-- TAB 1: VISÃO GERAL COM DÍVIDAS DIVIDIDAS EM EM ANDAMENTO / QUITADAS -->
             <section id="tab-dashboard" class="tab-content space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -192,13 +192,27 @@
                     </div>
                 </div>
 
-                <!-- DÍVIDAS AUTORIZADAS (GRID ÚNICO) -->
+                <!-- DÍVIDAS EM ANDAMENTO -->
                 <div class="space-y-4">
                     <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
-                        <i data-lucide="list-checks" class="w-5 h-5 text-brand-600"></i>
-                        Dívidas Autorizadas
+                        <i data-lucide="clock" class="w-5 h-5 text-amber-500"></i>
+                        Dívidas Em Andamento
                     </h3>
-                    <div id="debts-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    <div id="debts-pending-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <!-- DÍVIDAS QUITADAS -->
+                <div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                            Dívidas Quitadas
+                        </h3>
+                        <span id="badge-quitadas-count" class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                            0 Quitadas
+                        </span>
+                    </div>
+                    <div id="debts-paid-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
             </section>
 
@@ -608,6 +622,7 @@
             });
         }
 
+        // SALVA E REDIRECIONA PARA A TELA INICIAL
         window.saveSingleDebtToFirestore = async function(debtId) {
             const debt = debtsList.find(d => String(d.id) === String(debtId));
             if (!debt) return;
@@ -621,7 +636,9 @@
                     totalAmount: debt.totalAmount || debt.installments.reduce((acc, i) => acc + i.amount, 0),
                     updatedAt: new Date().toISOString()
                 });
-                alert(`✅ Alterações da dívida "${debt.name}" salvas no Firestore!`);
+
+                alert(`✅ Alterações salvas no banco de dados! Redirecionando para a Visão Geral...`);
+                switchTab('dashboard');
             } catch (err) {
                 console.error("Erro ao salvar no Firestore:", err);
                 alert("Erro ao salvar no banco de dados.");
@@ -846,12 +863,14 @@
             return dueDateStr < todayStr;
         }
 
+        // RENDEREIZA A VISÃO GERAL DIVIDINDO EM EM ANDAMENTO E QUITADAS
         function renderDashboard() {
             let grandTotal = 0;
             let grandPaid = 0;
 
-            const grid = document.getElementById('debts-cards-grid');
-            if (!grid) return;
+            const pendingGrid = document.getElementById('debts-pending-grid');
+            const paidGrid = document.getElementById('debts-paid-grid');
+            if (!pendingGrid || !paidGrid) return;
 
             let filteredDebts = debtsList.filter(d => {
                 const ownersList = d.owners || (d.owner ? [d.owner] : ['Matheus Faula']);
@@ -881,7 +900,10 @@
 
             document.getElementById('stat-profile-label').innerText = selectedFilterProfile === 'TODOS' ? 'Total do Seu Acesso' : `Dívidas de: ${selectedFilterProfile}`;
 
-            grid.innerHTML = filteredDebts.map(debt => {
+            const pendingCards = [];
+            const paidCards = [];
+
+            filteredDebts.forEach(debt => {
                 const ownersList = debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']);
                 const total = debt.installments.reduce((acc, item) => acc + item.amount, 0);
                 const paid = debt.installments.filter(item => item.status === 'Pago').reduce((acc, item) => acc + item.amount, 0);
@@ -891,11 +913,12 @@
 
                 const nextPending = debt.installments.find(item => item.status === 'Pendente');
                 const hasAtraso = nextPending && isOverdue(nextPending.dueDate);
+                const isQuitada = remaining === 0;
 
                 grandTotal += total;
                 grandPaid += paid;
 
-                return `
+                const cardHtml = `
                     <div onclick="selectAndShowDebt('${debt.id}')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border ${hasAtraso ? 'border-rose-300 dark:border-rose-900 shadow-rose-100 dark:shadow-none' : 'border-slate-200 dark:border-slate-700'} shadow-sm hover:border-brand-500 cursor-pointer transition-all space-y-4">
                         <div class="flex items-center justify-between">
                             <div>
@@ -904,8 +927,8 @@
                                     👤 ${ownersList.join(' + ')}
                                 </span>
                             </div>
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${remaining === 0 ? 'bg-emerald-100 text-emerald-700' : hasAtraso ? 'bg-rose-100 text-rose-700 font-extrabold animate-pulse' : 'bg-amber-100 text-amber-700'}">
-                                ${remaining === 0 ? 'Quitado' : hasAtraso ? 'EM ATRASO' : `${paidCount}/${debt.installments.length} Pagas`}
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${isQuitada ? 'bg-emerald-100 text-emerald-700' : hasAtraso ? 'bg-rose-100 text-rose-700 font-extrabold animate-pulse' : 'bg-amber-100 text-amber-700'}">
+                                ${isQuitada ? 'Quitado' : hasAtraso ? 'EM ATRASO' : `${paidCount}/${debt.installments.length} Pagas`}
                             </span>
                         </div>
 
@@ -915,7 +938,7 @@
                                     ${hasAtraso ? '⚠️ Vencimento Atrasado' : 'Próximo Vencimento'}
                                 </span>
                                 <strong class="${hasAtraso ? 'text-rose-700 dark:text-rose-400 font-extrabold' : 'text-slate-800 dark:text-slate-200 font-bold'}">
-                                    ${nextPending ? nextPending.dueDate.split('-').reverse().join('/') : 'Nenhum pendente'}
+                                    ${nextPending ? nextPending.dueDate.split('-').reverse().join('/') : 'Totalmente Quitado'}
                                 </strong>
                             </div>
                             <div class="text-right">
@@ -948,7 +971,18 @@
                         </div>
                     </div>
                 `;
-            }).join('');
+
+                if (isQuitada) {
+                    paidCards.push(cardHtml);
+                } else {
+                    pendingCards.push(cardHtml);
+                }
+            });
+
+            pendingGrid.innerHTML = pendingCards.join('') || `<div class="col-span-full p-4 text-center text-xs text-slate-400 bg-white dark:bg-slate-800 rounded-xl">Nenhuma dívida em andamento.</div>`;
+            paidGrid.innerHTML = paidCards.join('') || `<div class="col-span-full p-4 text-center text-xs text-slate-400 bg-white dark:bg-slate-800 rounded-xl">Nenhuma dívida quitada ainda.</div>`;
+            
+            document.getElementById('badge-quitadas-count').innerText = `${paidCards.length} Quitadas`;
 
             document.getElementById('stat-total-debt').innerText = `R$ ${grandTotal.toFixed(2)}`;
             document.getElementById('stat-total-paid').innerText = `R$ ${grandPaid.toFixed(2)}`;
@@ -1168,7 +1202,6 @@
             renderDashboard();
             renderDebtDetails(debtId);
 
-            // Grava a mudança no Firestore automaticamente
             try {
                 const safeId = getSafeDocId(debt);
                 await setDoc(doc(db, "debts_tracker", safeId), {
