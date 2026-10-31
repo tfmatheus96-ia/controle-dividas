@@ -121,7 +121,7 @@
         <!-- Conteúdo Principal -->
         <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
 
-            <!-- TAB 1: VISÃO GERAL (INALTERADA) -->
+            <!-- TAB 1: VISÃO GERAL -->
             <section id="tab-dashboard" class="tab-content space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -202,7 +202,7 @@
                 </div>
             </section>
 
-            <!-- TAB 2: CENTRAL DE RELATÓRIOS & GRÁFICOS (EXPORTAÇÃO PDF) -->
+            <!-- TAB 2: CENTRAL DE RELATÓRIOS & GRÁFICOS -->
             <section id="tab-reports" class="tab-content hidden space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -246,7 +246,6 @@
 
                 <!-- ÁREA DE EXPORTAÇÃO PDF -->
                 <div id="pdf-export-area" class="space-y-6 p-2 bg-slate-50 dark:bg-slate-900 rounded-2xl">
-                    <!-- PAINEL DE CARDS RESUMO DO RELATÓRIO -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                             <span class="text-xs text-slate-400 block font-medium">Total Filtrado</span>
@@ -266,9 +265,7 @@
                         </div>
                     </div>
 
-                    <!-- GRÁFICOS VISUAIS -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Gráfico 1: Status Pago vs Pendente -->
                         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
                             <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                 <i data-lucide="pie-chart" class="w-4 h-4 text-brand-600"></i> Proporção: Pago vs. Pendente
@@ -278,7 +275,6 @@
                             </div>
                         </div>
 
-                        <!-- Gráfico 2: Distribuição por Credor / Dívida -->
                         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
                             <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                 <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i> Comparativo por Dívida (R$)
@@ -289,7 +285,6 @@
                         </div>
                     </div>
 
-                    <!-- TABELA DETALHADA DO RELATÓRIO -->
                     <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
                         <h4 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <i data-lucide="list-tree" class="w-5 h-5 text-brand-600"></i>
@@ -316,7 +311,7 @@
                 </div>
             </section>
 
-            <!-- TAB 3: GERENCIAR DÍVIDA SELECIONADA (APARECE QUANDO CLICA EM UM CARD DA VISÃO GERAL) -->
+            <!-- TAB 3: GERENCIAR DÍVIDA SELECIONADA -->
             <section id="tab-debts" class="tab-content hidden space-y-6">
                 <div id="debt-detail-container" class="space-y-6"></div>
             </section>
@@ -588,6 +583,13 @@
             });
         }
 
+        function getSafeDocId(debt) {
+            if (debt.id && !String(debt.id).startsWith('plan-')) {
+                return String(debt.id);
+            }
+            return debt.name.replace(/[^a-zA-Z0-9]/g, "_");
+        }
+
         function initFirestoreListeners() {
             onSnapshot(collection(db, "debts_tracker"), (snapshot) => {
                 const cloudDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -595,7 +597,7 @@
                     cloudDocs.forEach(cDoc => {
                         const index = debtsList.findIndex(d => String(d.id) === String(cDoc.id) || d.name === cDoc.name);
                         if (index !== -1) {
-                            debtsList[index] = cDoc;
+                            debtsList[index] = { ...debtsList[index], ...cDoc, id: cDoc.id };
                         } else {
                             debtsList.push(cDoc);
                         }
@@ -611,7 +613,7 @@
             if (!debt) return;
 
             try {
-                const safeId = String(debt.id).startsWith('plan-') ? debt.name.replace(/[^a-zA-Z0-9]/g, "_") : debt.id;
+                const safeId = getSafeDocId(debt);
                 await setDoc(doc(db, "debts_tracker", safeId), {
                     name: debt.name,
                     owners: debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']),
@@ -619,7 +621,7 @@
                     totalAmount: debt.totalAmount || debt.installments.reduce((acc, i) => acc + i.amount, 0),
                     updatedAt: new Date().toISOString()
                 });
-                alert(`✅ Alterações da dívida "${debt.name}" salvas com sucesso no banco de dados!`);
+                alert(`✅ Alterações da dívida "${debt.name}" salvas no Firestore!`);
             } catch (err) {
                 console.error("Erro ao salvar no Firestore:", err);
                 alert("Erro ao salvar no banco de dados.");
@@ -989,7 +991,6 @@
                         </div>
                         
                         <div class="flex flex-wrap items-center gap-2">
-                            <!-- BOTÃO SALVAR ALTERAÇÕES DENTRO DA ABA DA DÍVIDA -->
                             <button onclick="saveSingleDebtToFirestore('${debt.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all">
                                 <i data-lucide="save" class="w-4 h-4"></i> Salvar no Banco
                             </button>
@@ -1128,31 +1129,34 @@
             renderDebtDetails(id);
             toggleEditDebtModal(false);
 
-            if (!String(id).startsWith('plan-')) {
-                await updateDoc(doc(db, "debts_tracker", id), {
-                    name: newName,
-                    owners: checkedOwners,
-                    installments: debt.installments,
-                    totalAmount: debt.totalAmount
-                });
-            }
+            const safeId = getSafeDocId(debt);
+            await setDoc(doc(db, "debts_tracker", safeId), {
+                name: newName,
+                owners: checkedOwners,
+                installments: debt.installments,
+                totalAmount: debt.totalAmount,
+                updatedAt: new Date().toISOString()
+            });
         };
 
         window.confirmDeleteFromEdit = async function() {
             const id = document.getElementById('edit-debt-id').value;
+            const debt = debtsList.find(d => String(d.id) === String(id));
+            
             if (confirm("Tem certeza que deseja excluir esta dívida permanentemente? Esta ação não pode ser desfeita.")) {
                 debtsList = debtsList.filter(d => String(d.id) !== String(id));
                 toggleEditDebtModal(false);
                 renderDashboard();
                 switchTab('dashboard');
 
-                if (!String(id).startsWith('plan-')) {
-                    await deleteDoc(doc(db, "debts_tracker", id));
+                if (debt) {
+                    const safeId = getSafeDocId(debt);
+                    await deleteDoc(doc(db, "debts_tracker", safeId));
                 }
             }
         };
 
-        window.toggleInstallmentStatus = function(debtId, instNumber) {
+        window.toggleInstallmentStatus = async function(debtId, instNumber) {
             const debt = debtsList.find(d => String(d.id) === String(debtId));
             if (!debt) return;
 
@@ -1163,6 +1167,20 @@
 
             renderDashboard();
             renderDebtDetails(debtId);
+
+            // Grava a mudança no Firestore automaticamente
+            try {
+                const safeId = getSafeDocId(debt);
+                await setDoc(doc(db, "debts_tracker", safeId), {
+                    name: debt.name,
+                    owners: debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']),
+                    installments: debt.installments,
+                    totalAmount: debt.totalAmount || debt.installments.reduce((acc, i) => acc + i.amount, 0),
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao sincronizar status da parcela:", err);
+            }
         };
 
         window.toggleNewDebtModal = function(show) {
