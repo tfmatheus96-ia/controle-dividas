@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FinanControl - Gestão de Dívidas & Relatórios</title>
+    <title>FinanControl - Gestão de Dívidas & Permissões Automáticas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -27,10 +27,6 @@
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js para os Gráficos de Relatório -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- html2pdf.js para Exportar o Relatório em PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full font-sans antialiased transition-colors duration-200">
 
@@ -92,9 +88,9 @@
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                     Visão Geral
                 </button>
-                <button onclick="switchTab('reports')" id="dt-nav-reports" class="nav-btn-desktop w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
-                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
-                    Relatórios & Gráficos
+                <button onclick="switchTab('debts')" id="dt-nav-debts" class="nav-btn-desktop w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
+                    <i data-lucide="receipt" class="w-5 h-5"></i>
+                    Gerenciar Dívidas
                 </button>
                 <button onclick="switchTab('profiles')" id="dt-nav-profiles" class="nav-btn-desktop w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all">
                     <i data-lucide="users" class="w-5 h-5"></i>
@@ -129,17 +125,10 @@
                         <p class="text-sm text-slate-500 dark:text-slate-400">Clique em qualquer dívida abaixo para abrir as parcelas e gerenciar o status.</p>
                     </div>
                     
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button onclick="saveAllChangesToFirestore()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
-                            <i data-lucide="save" class="w-4 h-4"></i>
-                            Salvar no Banco
-                        </button>
-                        
-                        <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            Nova Dívida / Acordo
-                        </button>
-                    </div>
+                    <button onclick="toggleNewDebtModal(true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95 transition-all">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        Nova Dívida / Acordo
+                    </button>
                 </div>
 
                 <!-- CONTROLES: PERFIL E ORDENAÇÃO -->
@@ -199,149 +188,22 @@
                     </div>
                 </div>
 
-                <!-- DÍVIDAS ATIVAS -->
+                <!-- DÍVIDAS AUTORIZADAS (GRID ÚNICO RESTAURADO) -->
                 <div class="space-y-4">
                     <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
-                        <i data-lucide="clock" class="w-5 h-5 text-amber-500"></i>
-                        Dívidas Em Andamento
+                        <i data-lucide="list-checks" class="w-5 h-5 text-brand-600"></i>
+                        Dívidas Autorizadas
                     </h3>
-                    <div id="debts-active-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                </div>
-
-                <!-- DÍVIDAS QUITADAS -->
-                <div class="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-700">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
-                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i>
-                            Dívidas Quitadas
-                        </h3>
-                        <span id="paid-count-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">0 Quitadas</span>
-                    </div>
-                    <div id="debts-completed-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    <div id="debts-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
             </section>
 
-            <!-- TAB 2: CENTRAL DE RELATÓRIOS & GRÁFICOS (EXPORTAR PDF) -->
-            <section id="tab-reports" class="tab-content hidden space-y-6">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Central de Relatórios & Análise</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Filtre por período, visualize os gráficos e exporte seu relatório completo em PDF.</p>
-                    </div>
-                    <button onclick="exportReportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20 active:scale-95 transition-all">
-                        <i data-lucide="file-text" class="w-4 h-4"></i>
-                        Exportar Relatório em PDF
-                    </button>
-                </div>
-
-                <!-- FILTROS DO RELATÓRIO -->
-                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Status da Dívida</label>
-                        <select id="report-filter-status" onchange="updateReportsView()" class="w-full p-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none">
-                            <option value="ALL">Todas as Dívidas</option>
-                            <option value="PENDING">Apenas Pendentes</option>
-                            <option value="PAID">Apenas Quitadas</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Data Inicial (Vencimento)</label>
-                        <input type="date" id="report-filter-start-date" onchange="updateReportsView()" class="w-full p-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Data Final (Vencimento)</label>
-                        <input type="date" id="report-filter-end-date" onchange="updateReportsView()" class="w-full p-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Perfil / Responsável</label>
-                        <select id="report-filter-owner" onchange="updateReportsView()" class="w-full p-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none">
-                            <option value="ALL">Todos Autorizados</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- ÁREA DE EXPORTAÇÃO PDF -->
-                <div id="pdf-export-area" class="space-y-6 p-2 bg-slate-50 dark:bg-slate-900 rounded-2xl">
-                    
-                    <!-- PAINEL DE CARDS RESUMO DO RELATÓRIO -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <span class="text-xs text-slate-400 block font-medium">Total Filtrado</span>
-                            <strong id="rep-stat-total" class="text-xl font-bold text-slate-900 dark:text-white">R$ 0,00</strong>
-                        </div>
-                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <span class="text-xs text-slate-400 block font-medium">Total Pago</span>
-                            <strong id="rep-stat-paid" class="text-xl font-bold text-emerald-600">R$ 0,00</strong>
-                        </div>
-                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <span class="text-xs text-slate-400 block font-medium">Saldo Pendente</span>
-                            <strong id="rep-stat-pending" class="text-xl font-bold text-rose-600">R$ 0,00</strong>
-                        </div>
-                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <span class="text-xs text-slate-400 block font-medium">Percentual Concluído</span>
-                            <strong id="rep-stat-progress" class="text-xl font-bold text-brand-600">0%</strong>
-                        </div>
-                    </div>
-
-                    <!-- GRÁFICOS VISUAIS -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Gráfico 1: Status Pago vs Pendente -->
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
-                            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                <i data-lucide="pie-chart" class="w-4 h-4 text-brand-600"></i> Proporção: Pago vs. Pendente
-                            </h4>
-                            <div class="h-64 relative flex items-center justify-center">
-                                <canvas id="chart-status"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Gráfico 2: Distribuição por Credor / Dívida -->
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
-                            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i> Comparativo por Dívida (R$)
-                            </h4>
-                            <div class="h-64 relative">
-                                <canvas id="chart-debts-bar"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TABELA DETALHADA DO RELATÓRIO -->
-                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-                        <h4 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <i data-lucide="list-tree" class="w-5 h-5 text-brand-600"></i>
-                            Detalhamento Consolidado por Dívida
-                        </h4>
-
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-400">
-                                        <th class="py-3 px-2">Dívida / Credor</th>
-                                        <th class="py-3 px-2">Responsável(is)</th>
-                                        <th class="py-3 px-2">Parcelas Pagas</th>
-                                        <th class="py-3 px-2">Valor Total</th>
-                                        <th class="py-3 px-2">Valor Pago</th>
-                                        <th class="py-3 px-2 text-right">Saldo Restante</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="report-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/50 text-xs">
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- TAB 3: GERENCIAR DÍVIDAS / VISUALIZAR PARCELAS -->
+            <!-- TAB 2: GERENCIAR DÍVIDAS (ABA DA DÍVIDA SELECIONADA + BOTÃO SALVAR) -->
             <section id="tab-debts" class="tab-content hidden space-y-6">
                 <div id="debt-detail-container" class="space-y-6"></div>
             </section>
 
-            <!-- TAB 4: GERENCIAR ACESSOS E PERFIS -->
+            <!-- TAB 3: GERENCIAR ACESSOS E PERFIS -->
             <section id="tab-profiles" class="tab-content hidden space-y-6">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gerenciamento de Perfis & Permissões</h2>
@@ -517,9 +379,6 @@
         let currentUserPermissions = { role: "USER", allowedProfiles: [] };
         let currentSortOption = "dueDate";
 
-        let chartStatusInstance = null;
-        let chartBarInstance = null;
-
         let customProfiles = [
             { name: "Matheus Faula", email: "t.f.matheus96@gmail.com" },
             { name: "Dayane Azevedo", email: "dayaneazevedo88@gmail.com" }
@@ -601,7 +460,6 @@
 
                 document.getElementById('user-role-badge').innerText = currentUserPermissions.role === 'ADMIN' ? '⚡ Administrador' : '🔒 Acesso Restrito';
 
-                populateReportOwnerOptions();
                 renderProfileButtons();
                 renderProfilesManagerList();
                 renderDashboard();
@@ -622,257 +480,122 @@
                     });
                 }
                 renderDashboard();
-                updateReportsView();
                 if (selectedDebtId) renderDebtDetails(selectedDebtId);
             });
         }
 
-        window.saveAllChangesToFirestore = async function() {
+        // SALVAR UMA DÍVIDA ESPECÍFICA NO FIRESTORE
+        window.saveSingleDebtToFirestore = async function(debtId) {
+            const debt = debtsList.find(d => String(d.id) === String(debtId));
+            if (!debt) return;
+
             try {
-                for (const debt of debtsList) {
-                    const safeId = String(debt.id).startsWith('plan-') ? debt.name.replace(/[^a-zA-Z0-9]/g, "_") : debt.id;
-                    await setDoc(doc(db, "debts_tracker", safeId), {
-                        name: debt.name,
-                        owners: debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']),
-                        installments: debt.installments,
-                        totalAmount: debt.totalAmount || debt.installments.reduce((acc, i) => acc + i.amount, 0),
-                        updatedAt: new Date().toISOString()
-                    });
-                }
-                alert("✅ Todas as baixas e alterações foram salvas com sucesso no banco de dados!");
+                const safeId = String(debt.id).startsWith('plan-') ? debt.name.replace(/[^a-zA-Z0-9]/g, "_") : debt.id;
+                await setDoc(doc(db, "debts_tracker", safeId), {
+                    name: debt.name,
+                    owners: debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']),
+                    installments: debt.installments,
+                    totalAmount: debt.totalAmount || debt.installments.reduce((acc, i) => acc + i.amount, 0),
+                    updatedAt: new Date().toISOString()
+                });
+                alert(`✅ Alterações da dívida "${debt.name}" salvas com sucesso no banco de dados!`);
             } catch (err) {
                 console.error("Erro ao salvar no Firestore:", err);
-                alert("Erro ao salvar alterações no banco de dados.");
+                alert("Erro ao salvar no banco de dados.");
             }
         };
 
-        function populateReportOwnerOptions() {
-            const select = document.getElementById('report-filter-owner');
-            if (!select) return;
-            
-            const visibleProfiles = customProfiles.filter(p => {
+        window.handleCreateProfile = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-profile-name').value.trim();
+            const email = document.getElementById('new-profile-email').value.trim().toLowerCase();
+
+            if (name && email) {
+                const newUserDoc = {
+                    name: name,
+                    email: email,
+                    role: "USER",
+                    allowedProfiles: [name],
+                    createdAt: new Date().toISOString()
+                };
+
+                const safeDocId = email.replace(/[^a-zA-Z0-9]/g, "_");
+                await setDoc(doc(db, "app_users", safeDocId), newUserDoc);
+
+                document.getElementById('new-profile-name').value = '';
+                document.getElementById('new-profile-email').value = '';
+
+                alert(`Perfil "${name}" criado e salvo no Firestore! O acesso para ${email} está liberado.`);
+            }
+        };
+
+        function renderProfilesManagerList() {
+            const container = document.getElementById('profiles-list-container');
+            if (!container) return;
+            container.innerHTML = customProfiles.map(p => `
+                <div class="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-xs">
+                    <div>
+                        <strong class="block text-slate-800 dark:text-slate-200">${p.name}</strong>
+                        <span class="text-slate-400">${p.email}</span>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderProfileButtons() {
+            const container = document.getElementById('profile-buttons-container');
+            if (!container) return;
+
+            let visibleProfiles = customProfiles.filter(p => {
                 if (currentUserPermissions.role === 'ADMIN') return true;
                 return currentUserPermissions.allowedProfiles.includes(p.name);
             }).map(p => p.name);
 
-            select.innerHTML = `<option value="ALL">Todos Autorizados</option>` + 
-                visibleProfiles.map(p => `<option value="${p}">${p}</option>`).join('');
-        }
+            const allOptions = currentUserPermissions.role === 'ADMIN' ? ['TODOS', ...visibleProfiles] : visibleProfiles;
 
-        // LÓGICA DE GERMANÇÃO DE RELATÓRIOS E GRÁFICOS
-        window.updateReportsView = function() {
-            const statusFilter = document.getElementById('report-filter-status').value;
-            const startDate = document.getElementById('report-filter-start-date').value;
-            const endDate = document.getElementById('report-filter-end-date').value;
-            const ownerFilter = document.getElementById('report-filter-owner').value;
-
-            let filtered = debtsList.filter(d => {
-                const ownersList = d.owners || (d.owner ? [d.owner] : ['Matheus Faula']);
-                if (currentUserPermissions.role !== 'ADMIN') {
-                    if (!ownersList.some(o => currentUserPermissions.allowedProfiles.includes(o))) return false;
-                }
-                if (ownerFilter !== 'ALL' && !ownersList.includes(ownerFilter)) return false;
-                return true;
-            });
-
-            let totalVal = 0;
-            let paidVal = 0;
-            let pendingVal = 0;
-
-            const tableRows = [];
-            const chartLabels = [];
-            const chartDataPaid = [];
-            const chartDataPending = [];
-
-            filtered.forEach(debt => {
-                const ownersList = debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']);
-                
-                // Filtro por parcelas dentro da data de vencimento
-                let validInsts = debt.installments;
-                if (startDate) validInsts = validInsts.filter(i => i.dueDate >= startDate);
-                if (endDate) validInsts = validInsts.filter(i => i.dueDate <= endDate);
-
-                if (validInsts.length === 0) return;
-
-                const dTotal = validInsts.reduce((acc, i) => acc + i.amount, 0);
-                const dPaid = validInsts.filter(i => i.status === 'Pago').reduce((acc, i) => acc + i.amount, 0);
-                const dPending = dTotal - dPaid;
-                const isComplete = dPending === 0;
-
-                if (statusFilter === 'PENDING' && isComplete) return;
-                if (statusFilter === 'PAID' && !isComplete) return;
-
-                totalVal += dTotal;
-                paidVal += dPaid;
-                pendingVal += dPending;
-
-                chartLabels.push(debt.name);
-                chartDataPaid.push(dPaid);
-                chartDataPending.push(dPending);
-
-                const paidCount = validInsts.filter(i => i.status === 'Pago').length;
-
-                tableRows.push(`
-                    <tr>
-                        <td class="py-3 px-2 font-bold text-slate-800 dark:text-slate-200">${debt.name}</td>
-                        <td class="py-3 px-2 font-semibold text-slate-500">${ownersList.join(', ')}</td>
-                        <td class="py-3 px-2">${paidCount}/${validInsts.length} Pagas</td>
-                        <td class="py-3 px-2 font-semibold">R$ ${dTotal.toFixed(2)}</td>
-                        <td class="py-3 px-2 font-bold text-emerald-600">R$ ${dPaid.toFixed(2)}</td>
-                        <td class="py-3 px-2 text-right font-bold text-rose-600">R$ ${dPending.toFixed(2)}</td>
-                    </tr>
-                `);
-            });
-
-            document.getElementById('rep-stat-total').innerText = `R$ ${totalVal.toFixed(2)}`;
-            document.getElementById('rep-stat-paid').innerText = `R$ ${paidVal.toFixed(2)}`;
-            document.getElementById('rep-stat-pending').innerText = `R$ ${pendingVal.toFixed(2)}`;
-            
-            const pct = totalVal > 0 ? Math.round((paidVal / totalVal) * 100) : 0;
-            document.getElementById('rep-stat-progress').innerText = `${pct}%`;
-
-            document.getElementById('report-table-body').innerHTML = tableRows.join('') || `
-                <tr><td colspan="6" class="py-4 text-center text-slate-400">Nenhum dado encontrado com os filtros selecionados.</td></tr>
-            `;
-
-            renderReportCharts(paidVal, pendingVal, chartLabels, chartDataPaid, chartDataPending);
-        };
-
-        function renderReportCharts(paid, pending, labels, dataPaid, dataPending) {
-            // 1. Gráfico de Rosca (Status)
-            const ctxStatus = document.getElementById('chart-status');
-            if (ctxStatus) {
-                if (chartStatusInstance) chartStatusInstance.destroy();
-                chartStatusInstance = new Chart(ctxStatus, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Pago', 'Pendente'],
-                        datasets: [{
-                            data: [paid, pending],
-                            backgroundColor: ['#22c55e', '#f43f5e'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
+            if (!allOptions.includes(selectedFilterProfile)) {
+                selectedFilterProfile = allOptions[0] || 'TODOS';
             }
 
-            // 2. Gráfico de Barras por Dívida
-            const ctxBar = document.getElementById('chart-debts-bar');
-            if (ctxBar) {
-                if (chartBarInstance) chartBarInstance.destroy();
-                chartBarInstance = new Chart(ctxBar, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            { label: 'Valor Pago', data: dataPaid, backgroundColor: '#22c55e' },
-                            { label: 'Saldo Pendente', data: dataPending, backgroundColor: '#f43f5e' }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: { x: { stacked: true }, y: { stacked: true } }
-                    }
-                });
-            }
+            container.innerHTML = allOptions.map(p => `
+                <button onclick="setFilterProfile('${p}')" id="btn-profile-${p}" class="profile-tab-btn px-3.5 py-1 rounded-xl text-xs font-bold transition-all ${selectedFilterProfile === p ? 'bg-brand-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}">
+                    ${p === 'TODOS' ? 'Todos Autorizados' : p}
+                </button>
+            `).join('');
         }
 
-        // EXPORTAÇÃO COMPLETA EM PDF
-        window.exportReportPDF = function() {
-            const element = document.getElementById('pdf-export-area');
-            const opt = {
-                margin:       0.3,
-                filename:     `FinanControl_Relatorio_${new Date().toISOString().split('T')[0]}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save();
+        window.setFilterProfile = function(p) {
+            selectedFilterProfile = p;
+            renderProfileButtons();
+            renderDashboard();
         };
 
-        function buildCardHtml(debt) {
-            const ownersList = debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']);
-            const total = debt.installments.reduce((acc, item) => acc + item.amount, 0);
-            const paid = debt.installments.filter(item => item.status === 'Pago').reduce((acc, item) => acc + item.amount, 0);
-            const remaining = total - paid;
-            const paidCount = debt.installments.filter(item => item.status === 'Pago').length;
-            const progressPct = Math.round((paidCount / debt.installments.length) * 100) || 0;
+        window.handleSortChange = function(sortValue) {
+            currentSortOption = sortValue;
+            renderDashboard();
+        };
 
-            const nextPending = debt.installments.find(item => item.status === 'Pendente');
-            const hasAtraso = nextPending && isOverdue(nextPending.dueDate);
-
-            return `
-                <div onclick="selectAndShowDebt('${debt.id}')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border ${hasAtraso ? 'border-rose-300 dark:border-rose-900 shadow-rose-100 dark:shadow-none' : 'border-slate-200 dark:border-slate-700'} shadow-sm hover:border-brand-500 cursor-pointer transition-all space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-slate-900 dark:text-white text-base leading-tight">${debt.name}</h4>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 mt-1 inline-block">
-                                👤 ${ownersList.join(' + ')}
-                            </span>
-                        </div>
-                        <span class="text-xs font-bold px-2.5 py-1 rounded-full ${remaining === 0 ? 'bg-emerald-100 text-emerald-700' : hasAtraso ? 'bg-rose-100 text-rose-700 font-extrabold animate-pulse' : 'bg-amber-100 text-amber-700'}">
-                            ${remaining === 0 ? 'Quitado' : hasAtraso ? 'EM ATRASO' : `${paidCount}/${debt.installments.length} Pagas`}
-                        </span>
-                    </div>
-
-                    <div class="p-3 rounded-xl ${hasAtraso ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700'} border flex justify-between items-center text-xs">
-                        <div>
-                            <span class="${hasAtraso ? 'text-rose-600 font-semibold' : 'text-slate-400'} block text-[11px]">
-                                ${hasAtraso ? '⚠️ Vencimento Atrasado' : 'Próximo Vencimento'}
-                            </span>
-                            <strong class="${hasAtraso ? 'text-rose-700 dark:text-rose-400 font-extrabold' : 'text-slate-800 dark:text-slate-200 font-bold'}">
-                                ${nextPending ? nextPending.dueDate.split('-').reverse().join('/') : 'Nenhum pendente'}
-                            </strong>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-slate-400 block text-[11px]">Valor Parcela</span>
-                            <strong class="text-brand-600 dark:text-brand-400 font-bold">
-                                ${nextPending ? `R$ ${nextPending.amount.toFixed(2)}` : 'R$ 0,00'}
-                            </strong>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between text-xs text-slate-500 mb-1">
-                            <span>Progresso</span>
-                            <span class="font-bold text-slate-700 dark:text-slate-300">${progressPct}%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                            <div class="bg-brand-600 h-full rounded-full transition-all duration-300" style="width: ${progressPct}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-slate-700">
-                        <div>
-                            <span class="text-slate-400 block">Pago</span>
-                            <strong class="text-emerald-600 font-bold">R$ ${paid.toFixed(2)}</strong>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-slate-400 block">Restante</span>
-                            <strong class="text-rose-600 font-bold">R$ ${remaining.toFixed(2)}</strong>
-                        </div>
-                    </div>
-                </div>
-            `;
+        function isOverdue(dueDateStr) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            return dueDateStr < todayStr;
         }
 
         function renderDashboard() {
             let grandTotal = 0;
             let grandPaid = 0;
 
-            const activeGrid = document.getElementById('debts-active-grid');
-            const completedGrid = document.getElementById('debts-completed-grid');
-            if (!activeGrid || !completedGrid) return;
+            const grid = document.getElementById('debts-cards-grid');
+            if (!grid) return;
 
             let filteredDebts = debtsList.filter(d => {
                 const ownersList = d.owners || (d.owner ? [d.owner] : ['Matheus Faula']);
+                
                 if (currentUserPermissions.role !== 'ADMIN') {
                     const hasAccess = ownersList.some(owner => currentUserPermissions.allowedProfiles.includes(owner));
                     if (!hasAccess) return false;
                 }
+
                 if (selectedFilterProfile === 'TODOS') return true;
                 return ownersList.includes(selectedFilterProfile);
             });
@@ -891,47 +614,77 @@
                 }
             });
 
-            const activeDebts = [];
-            const completedDebts = [];
+            document.getElementById('stat-profile-label').innerText = selectedFilterProfile === 'TODOS' ? 'Total do Seu Acesso' : `Dívidas de: ${selectedFilterProfile}`;
 
-            filteredDebts.forEach(debt => {
+            grid.innerHTML = filteredDebts.map(debt => {
+                const ownersList = debt.owners || (debt.owner ? [debt.owner] : ['Matheus Faula']);
                 const total = debt.installments.reduce((acc, item) => acc + item.amount, 0);
                 const paid = debt.installments.filter(item => item.status === 'Pago').reduce((acc, item) => acc + item.amount, 0);
                 const remaining = total - paid;
+                const paidCount = debt.installments.filter(item => item.status === 'Pago').length;
+                const progressPct = Math.round((paidCount / debt.installments.length) * 100) || 0;
+
+                const nextPending = debt.installments.find(item => item.status === 'Pendente');
+                const hasAtraso = nextPending && isOverdue(nextPending.dueDate);
 
                 grandTotal += total;
                 grandPaid += paid;
 
-                if (remaining === 0) {
-                    completedDebts.push(debt);
-                } else {
-                    activeDebts.push(debt);
-                }
-            });
+                return `
+                    <div onclick="selectAndShowDebt('${debt.id}')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border ${hasAtraso ? 'border-rose-300 dark:border-rose-900 shadow-rose-100 dark:shadow-none' : 'border-slate-200 dark:border-slate-700'} shadow-sm hover:border-brand-500 cursor-pointer transition-all space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white text-base leading-tight">${debt.name}</h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 mt-1 inline-block">
+                                    👤 ${ownersList.join(' + ')}
+                                </span>
+                            </div>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${remaining === 0 ? 'bg-emerald-100 text-emerald-700' : hasAtraso ? 'bg-rose-100 text-rose-700 font-extrabold animate-pulse' : 'bg-amber-100 text-amber-700'}">
+                                ${remaining === 0 ? 'Quitado' : hasAtraso ? 'EM ATRASO' : `${paidCount}/${debt.installments.length} Pagas`}
+                            </span>
+                        </div>
 
-            document.getElementById('stat-profile-label').innerText = selectedFilterProfile === 'TODOS' ? 'Total do Seu Acesso' : `Dívidas de: ${selectedFilterProfile}`;
+                        <div class="p-3 rounded-xl ${hasAtraso ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700'} border flex justify-between items-center text-xs">
+                            <div>
+                                <span class="${hasAtraso ? 'text-rose-600 font-semibold' : 'text-slate-400'} block text-[11px]">
+                                    ${hasAtraso ? '⚠️ Vencimento Atrasado' : 'Próximo Vencimento'}
+                                </span>
+                                <strong class="${hasAtraso ? 'text-rose-700 dark:text-rose-400 font-extrabold' : 'text-slate-800 dark:text-slate-200 font-bold'}">
+                                    ${nextPending ? nextPending.dueDate.split('-').reverse().join('/') : 'Nenhum pendente'}
+                                </strong>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-400 block text-[11px]">Valor Parcela</span>
+                                <strong class="text-brand-600 dark:text-brand-400 font-bold">
+                                    ${nextPending ? `R$ ${nextPending.amount.toFixed(2)}` : 'R$ 0,00'}
+                                </strong>
+                            </div>
+                        </div>
 
-            if (activeDebts.length === 0) {
-                activeGrid.innerHTML = `
-                    <div class="col-span-full bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 text-center text-slate-400 text-sm">
-                        🎉 Nenhuma dívida pendente encontrada para este filtro!
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-500 mb-1">
+                                <span>Progresso</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">${progressPct}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                                <div class="bg-brand-600 h-full rounded-full transition-all duration-300" style="width: ${progressPct}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <div>
+                                <span class="text-slate-400 block">Pago</span>
+                                <strong class="text-emerald-600 font-bold">R$ ${paid.toFixed(2)}</strong>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-400 block">Restante</span>
+                                <strong class="text-rose-600 font-bold">R$ ${remaining.toFixed(2)}</strong>
+                            </div>
+                        </div>
                     </div>
                 `;
-            } else {
-                activeGrid.innerHTML = activeDebts.map(d => buildCardHtml(d)).join('');
-            }
+            }).join('');
 
-            if (completedDebts.length === 0) {
-                completedGrid.innerHTML = `
-                    <div class="col-span-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-center text-slate-400 text-xs">
-                        Nenhuma dívida quitada ainda.
-                    </div>
-                `;
-            } else {
-                completedGrid.innerHTML = completedDebts.map(d => buildCardHtml(d)).join('');
-            }
-
-            document.getElementById('paid-count-badge').innerText = `${completedDebts.length} Quitadas`;
             document.getElementById('stat-total-debt').innerText = `R$ ${grandTotal.toFixed(2)}`;
             document.getElementById('stat-total-paid').innerText = `R$ ${grandPaid.toFixed(2)}`;
             document.getElementById('stat-total-remaining').innerText = `R$ ${(grandTotal - grandPaid).toFixed(2)}`;
@@ -971,9 +724,17 @@
                             <h3 class="text-2xl font-bold text-slate-900 dark:text-white">${debt.name}</h3>
                             <span class="text-xs font-semibold text-slate-400">Responsável(is): ${ownersList.join(', ')}</span>
                         </div>
-                        <button onclick="openEditModalForDebt('${debt.id}')" class="bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-slate-700 dark:text-brand-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-brand-200 dark:border-slate-600 transition-all">
-                            <i data-lucide="edit-3" class="w-4 h-4"></i> Editar Dívida & Valores
-                        </button>
+                        
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- BOTÃO SALVAR ALTERAÇÕES DENTRO DA ABA DA DÍVIDA -->
+                            <button onclick="saveSingleDebtToFirestore('${debt.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all">
+                                <i data-lucide="save" class="w-4 h-4"></i> Salvar no Banco
+                            </button>
+
+                            <button onclick="openEditModalForDebt('${debt.id}')" class="bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-slate-700 dark:text-brand-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-brand-200 dark:border-slate-600 transition-all">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i> Editar Dívida & Valores
+                            </button>
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -1101,7 +862,6 @@
             debt.totalAmount = debt.installments.reduce((acc, i) => acc + i.amount, 0);
 
             renderDashboard();
-            updateReportsView();
             renderDebtDetails(id);
             toggleEditDebtModal(false);
 
@@ -1121,7 +881,6 @@
                 debtsList = debtsList.filter(d => String(d.id) !== String(id));
                 toggleEditDebtModal(false);
                 renderDashboard();
-                updateReportsView();
                 switchTab('dashboard');
 
                 if (!String(id).startsWith('plan-')) {
@@ -1130,7 +889,7 @@
             }
         };
 
-        window.toggleInstallmentStatus = async function(debtId, instNumber) {
+        window.toggleInstallmentStatus = function(debtId, instNumber) {
             const debt = debtsList.find(d => String(d.id) === String(debtId));
             if (!debt) return;
 
@@ -1140,14 +899,7 @@
             debt.installments[instIndex].status = debt.installments[instIndex].status === 'Pago' ? 'Pendente' : 'Pago';
 
             renderDashboard();
-            updateReportsView();
             renderDebtDetails(debtId);
-
-            if (!String(debt.id).startsWith('plan-')) {
-                await updateDoc(doc(db, "debts_tracker", debtId), {
-                    installments: debt.installments
-                });
-            }
         };
 
         window.toggleNewDebtModal = function(show) {
@@ -1172,9 +924,6 @@
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            if (tabId === 'reports') {
-                updateReportsView();
-            }
         };
 
         window.toggleTheme = function() {
