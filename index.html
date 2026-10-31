@@ -121,7 +121,7 @@
         <!-- Conteúdo Principal -->
         <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
 
-            <!-- TAB 1: VISÃO GERAL COM DÍVIDAS DIVIDIDAS EM EM ANDAMENTO / QUITADAS -->
+            <!-- TAB 1: VISÃO GERAL -->
             <section id="tab-dashboard" class="tab-content space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -622,7 +622,6 @@
             });
         }
 
-        // SALVA E REDIRECIONA PARA A TELA INICIAL
         window.saveSingleDebtToFirestore = async function(debtId) {
             const debt = debtsList.find(d => String(d.id) === String(debtId));
             if (!debt) return;
@@ -858,12 +857,13 @@
             renderDashboard();
         };
 
-        function isOverdue(dueDateStr) {
+        // CORREÇÃO: UMA PARCELA SÓ É CONSIDERADA ATRASADA SE ESTIVER PENDENTE
+        function isOverdue(dueDateStr, status) {
+            if (status === 'Pago') return false;
             const todayStr = new Date().toISOString().split('T')[0];
             return dueDateStr < todayStr;
         }
 
-        // RENDEREIZA A VISÃO GERAL DIVIDINDO EM EM ANDAMENTO E QUITADAS
         function renderDashboard() {
             let grandTotal = 0;
             let grandPaid = 0;
@@ -912,7 +912,7 @@
                 const progressPct = Math.round((paidCount / debt.installments.length) * 100) || 0;
 
                 const nextPending = debt.installments.find(item => item.status === 'Pendente');
-                const hasAtraso = nextPending && isOverdue(nextPending.dueDate);
+                const hasAtraso = nextPending && isOverdue(nextPending.dueDate, nextPending.status);
                 const isQuitada = remaining === 0;
 
                 grandTotal += total;
@@ -1048,7 +1048,7 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                 ${debt.installments.map((inst) => {
-                                    const atrasado = inst.status === 'Pendente' && isOverdue(inst.dueDate);
+                                    const atrasado = isOverdue(inst.dueDate, inst.status);
                                     return `
                                         <tr class="${atrasado ? 'bg-rose-50/50 dark:bg-rose-900/10' : ''}">
                                             <td class="py-3 px-2 font-bold">${inst.number}ª Parcela</td>
@@ -1190,6 +1190,7 @@
             }
         };
 
+        // SALVA AUTOMATICAMENTE AO MUDAR QUALQUER PARCELA
         window.toggleInstallmentStatus = async function(debtId, instNumber) {
             const debt = debtsList.find(d => String(d.id) === String(debtId));
             if (!debt) return;
